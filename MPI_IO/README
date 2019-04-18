@@ -1,0 +1,31 @@
+ MPI-IO exercises
+
+Pick any of the exercices you like to do. They are ordered in increasing complexity:
+
+-1- mpi_io_exa1.c: MPI_File_write_at
+   + cp mpi_io_exa1_skel.c my_exa1.c
+   + Fill in the approrate MPI flags into the MPI-IO routines to write a file in parallel.
+   + compile the file and run in parallel try as many MPI-tasks as you like. 
+   + check the my_test_file output file for correctness: it write the first nrank ASCII characters for each MPI-task
+
+-2- The demo directory contains a few examples with POSIX IO.
+   + posix1_w.c : Spokesman: one tasks does all IO write
+   + posix1_r.c : Spokesman: one tasks does all IO read
+   + posix2_w.c : one file per process
+   + posix3_w.c : subset of writers (most complicated)
+
+-3- mpi_io_exa2.c: MPI_File_set_view
+   + cp mpi_io_exa2_skel.c my_exa2.c
+   + Fill in the approrate MPI flags into the MPI-IO routines to write a file in parallel.
+   + compile the file and run in parallel use a few MPI-tasks to keep the overview. 
+
+-4a- mpiio_2D_w.c: MPI_File_write_all
+  + without running the program draw a 2D figure that contains the output of the program, by inspecting the source code.
+  + compile (mpicc mpiio_2D_w.c -lm) and run the program and check your drawing
+  + you can check the file with: od -i test.dat -w128
+
+-4b- Collective MPI-IO examples
+   + mpiio1_w.c: MPI_File_write_at_all
+   + mpiio1_r.c: MPI_File_read_at_all
+
+

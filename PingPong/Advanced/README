@@ -1,0 +1,36 @@
+Poing Pong is a program according to diagram:
+
+- process 0 sends a message to process 1 (ping)
+- after receiving this message, process 1 sends a message back to process 0 (pong)
+
+Repeated a loop of length 50
+
+Timing calls are added before and after the loop:
+
+C:	double MPI_Wtime(void);
+Fortran:	DOUBLE PRECISION FUNCTION MPI_WTIME()
+MPI_WTIME returns a wall-clock time in seconds.
+
+Process 0 prints out the transfer time of one message
+in seconds
+in µs.
+
+** Print out message transfer time and bandwidth for following send modes:
+
++ for standard send (MPI_Send)
++ for synchronous send (MPI_Ssend)
+
+for following message sizes:
++ 8 bytes (e.g., one double or double precision value)
++ 512 B	(= 8*64 bytes) 
++ 32 kB	(= 8*64**2 bytes)
++ 2 MB	(= 8*64**3 bytes)
+
+You can use ping_pong_advanced2_send.c and ping_pong_advanced2_ssend.c
+
+Can you explain the difference between in using send and ssend?
+
+*** IMPORTANT ***
+Before running your program set the stacksize to unlimited:
+ulimit -s unlimited
+

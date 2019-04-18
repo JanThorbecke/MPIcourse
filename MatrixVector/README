@@ -1,0 +1,12 @@
+Insert OpenMP directives in mxv_mpi.c/f90
+
+check the performance between pure MPI and hybrid. 
+
+Compile with 
+mpicc/f90 -openmp (Intel compiler)
+mpicc/f90 -fopenmp (GNU compiler)
+
+run with:
+export OMP_NUM_THREADS=8
+mpirun -np 2 ./a.out 10000
+

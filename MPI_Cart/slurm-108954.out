@@ -1,0 +1,27 @@
++ cd /vardim/home/thorbcke/src/MPIcourse/MPI_Cart
+++ date +%s%N
++ starttime=1496155968848786214
++ mpirun -np 16 ./ring_2d_sr
+PE- 11: x=2, y=3: Sum = 36 neighbors: left=7 right=15 top=10 bottom=-1
+PE- 10: x=2, y=2: Sum = 32 neighbors: left=6 right=14 top=9 bottom=11
+PE-  5: x=1, y=1: Sum = 28 neighbors: left=1 right=9 top=4 bottom=6
+PE- 15: x=3, y=3: Sum = 36 neighbors: left=11 right=3 top=14 bottom=-1
+PE- 14: x=3, y=2: Sum = 32 neighbors: left=10 right=2 top=13 bottom=15
+PE-  9: x=2, y=1: Sum = 28 neighbors: left=5 right=13 top=8 bottom=10
+PE- 13: x=3, y=1: Sum = 28 neighbors: left=9 right=1 top=12 bottom=14
+PE-  7: x=1, y=3: Sum = 36 neighbors: left=3 right=11 top=6 bottom=-1
+PE-  3: x=0, y=3: Sum = 36 neighbors: left=15 right=7 top=2 bottom=-1
+PE-  1: x=0, y=1: Sum = 28 neighbors: left=13 right=5 top=0 bottom=2
+PE- 12: x=3, y=0: Sum = 24 neighbors: left=8 right=0 top=-1 bottom=13
+PE-  2: x=0, y=2: Sum = 32 neighbors: left=14 right=6 top=1 bottom=3
+PE-  4: x=1, y=0: Sum = 24 neighbors: left=0 right=8 top=-1 bottom=5
+PE-  0: x=0, y=0: Sum = 24 neighbors: left=12 right=4 top=-1 bottom=1
+PE-  6: x=1, y=2: Sum = 32 neighbors: left=2 right=10 top=5 bottom=7
+PE-  8: x=2, y=0: Sum = 24 neighbors: left=4 right=12 top=-1 bottom=9
+++ date +%s%N
++ endtime=1496155969758650995
+++ echo 'scale=9; 1.0*10^(-9)*(1496155969758650995-1496155968848786214)'
+++ bc -l
++ runtime=.909864781
++ echo 'Runtime = .909864781 seconds'
+Runtime = .909864781 seconds

@@ -1,0 +1,2 @@
+suaddhead < snap_nz256_nx256_ny256_it\ 599.bin n1=256 n3=256 n2=256 | sushw key=fldr j=256 a=1 c=1 | suwind key=fldr min=12 max=12 dt=1 | suximage 
+

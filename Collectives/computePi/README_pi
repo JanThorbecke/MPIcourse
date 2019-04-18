@@ -1,0 +1,10 @@
+You will need the module in the file mpi.f90. You will find the completed files with a _sol appendix.
+
+In a program draft pi.f90 (pi.c) the value of pi is calculated by numerical integration: obtained by integrating the function f(x)=4/(1+x2). The purpose is to give each task an equal slice of the interval [0,1] for evaluation and combine the results in the end; that is, to parallelize the problem over the discretized integration grid points. Insert the appropriate MPI collective communication routine calls to marked places such that the program compiles and runs correctly. Investigate the effect of the integration interval to the accuracy.
+
+The following functions have to be inserted into the code
+
+  MPI_Bcast(&NumberTpBroadcast,1,MPI_INT,root_id,MPI_COMM_WORLD);
+
+  MPI_Reduce(&localnumber,&globalnumber,1,MPI_DOUBLE,MPI_REDUCTION_OPERATOR,root_id, MPI_COMM_WORLD);
+

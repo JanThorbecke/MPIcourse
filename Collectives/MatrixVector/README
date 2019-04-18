@@ -1,0 +1,13 @@
+
+Implement a parallel matrix-vector multiplication Ax=y such that a root task has the initial full arrays (e.g. as from an input file), and after the multiplication, all tasks have the vector y. A simple parallelization strategy is to divide A into blocks of some number of rows and broadcast the whole x to all tasks. The scattering of the matrix will be different in C and Fortran (due to how the languages place the arrays in memory) - see mxv.f90 and mxv.c and insert the appropriate collective operations.
+
+  MPI_Scatter(A, ****, MPI_FLOAT, Aloc, *****, MPI_FLOAT, 0,MPI_COMM_WORLD);
+  MPI_Bcast(x, ****, MPI_FLOAT, root, MPI_COMM_WORLD);
+
+  MPI_Allgather(yloc, ****, MPI_FLOAT, y, ****, MPI_FLOAT, MPI_COMM_WORLD);
+
+
+The inconvinient way of sending row-wise blocks with Fortran can be nicely overcome with user-defined datatypes . THis will be explained later in the course
+
+Further exercises (no solutions have been prepared):
+Examine further the matrix-vector multiplication: how the problem and the implementation is altered in different "starting points" meaning, if the location of the arrays A and x differ from the initial setup (say, all tasks have the full A or initialize a subset of it) and/or the y is not needed anywhere else but in a single task)? Furthermore, are there some other ways to do it, e.g. via the reduction operation?

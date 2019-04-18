@@ -1,0 +1,37 @@
+Exercise : Message send/recv with MPI (ping-pong)
+
+Ping-pong is a standard test in which two processes repeatedly pass a message back and forth. Write a program that sends a real array of fixed length, say, ten times back (ping) and forth (pong) to obtain an average time for one ping-pong. 
+
+Time the ping-pongs with MPI_WTIME calls. 
+
+You may use pingpong.c or pingpong.f90 as a starting point for this exercise. 
+The followong commands have to be inserted into the code:
+
+  MPI_Send(message,size,MPI_DOUBLE,send_to,ping,MPI_COMM_WORLD);
+  MPI_Recv(message,size,MPI_DOUBLE,recv_from,pong,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+
+  MPI_Recv(message,size,MPI_DOUBLE,recv_from,ping,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+  MPI_Send(message,size,MPI_DOUBLE,send_to,pong,MPI_COMM_WORLD);
+
+To compile and produce executable a.out:
+
+mpicc pingpong.c
+
+Investigate how the bandwidth varies with the size of the message. 
+
+You can do this using gnuplot as follows:
+Run the code inside one node and store the results in a file:
+mpirun -n 2 ./a.out > intra_node.dat
+
+Run the code so that the processes are on different nodes
+mpirun -n 2  ./a.out > inter_node.dat
+
+Start up gnuplot
+gnuplot
+Plot the bandwidth as a function of the message size in bytes
+plot 'intra_node.dat' u 2:8 w l, 'inter_node.dat' u 2:8 w l
+
+a) Why is the bandwidth smaller for small messages?
+b) Why is there a clear cusp in the bandwidth?
+c) Why is the bandwidth different depending on process placement?
+

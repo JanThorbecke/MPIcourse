@@ -1,0 +1,97 @@
+<<<<<<<<< PART 1 >>>>>>>>>>
+Pararellelize the serial-program sum.c using 2 MPI-tasks.
+You have to use Data and Work distribution.
+
+The following MPI code fragments are needed in sum.c to make it parallel with MPI:
+
+#include <mpi.h>
+
+    MPI_Init(&argc,&argv);
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+
+    MPI_Send(array+N/2,N/2,MPI_DOUBLE,1,10,MPI_COMM_WORLD);
+    MPI_Recv(array,N,MPI_DOUBLE,0,10,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+
+    MPI_Recv(&sum,1,MPI_DOUBLE,1,11,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+    MPI_Send(&psum,1,MPI_DOUBLE,0,11,MPI_COMM_WORLD);
+
+    MPI_Finalize();
+
+To compile the code type:
+
+make sum
+
+To run the code in parallel
+
+mpirun -np 2 ./sum
+
+The solution of PART1 is in sum_sol.c 
+
+<<<<<<<<< PART 2 >>>>>>>>>>
+Change the sum_getcount.c program to retrieve the status and print the number of elements sent.
+
+In PART 1 the use of MPI_Send and MPI_Recv to perform standard point-to-point communication. This only covered how to send messages in which the length of the message was known beforehand. Although it is possible to send the length of the message as a separate send / recv operation, MPI natively supports dynamic messages with just a few additional function calls. 
+
+## The MPI_Status structure
+The `MPI_Recv` operation takes the address of an `MPI_Status` structure as an argument (which can be ignored with `MPI_STATUS_IGNORE`). If we pass an `MPI_Status` structure to the `MPI_Recv` function, it will be populated with additional
+information about the receive operation after it completes. The three primary pieces of information include:
+
+1. **The rank of the sender**. The rank of the sender is stored in the `MPI_SOURCE` element of the structure. That is, if we declare an `MPI_Status stat` variable, the rank can be accessed with `stat.MPI_SOURCE`.
+2. **The tag of the message**. The tag of the message can be accessed by the `MPI_TAG` element of the structure (similar to `MPI_SOURCE`).
+3. **The length of the message**. The length of the message does not have a predefined element in the status structure. Instead, we have to find out the length of the message with `MPI_Get_count`.
+
+MPI_Get_count(
+    MPI_Status* status,
+    MPI_Datatype datatype,
+    int* count)
+
+In `MPI_Get_count`, the user passes the `MPI_Status` structure, the `datatype` of the message, and `count` is returned. The `count` variable is the total number of `datatype` elements that were received.
+
+Why would any of this information be necessary? It turns out that `MPI_Recv` can take `MPI_ANY_SOURCE` for the rank of the sender and `MPI_ANY_TAG` for the tag of the message. For this case, the `MPI_Status` structure is the only way to find out the actual sender and tag of the message. Furthermore, `MPI_Recv` is not guaranteed to receive the entire amount of elements passed as the argument to the function call. Instead, it receives the amount of elements that were sent to it (and returns an error if more elements were sent than the desired receive amount). The MPI_Get_count function is used to determine the actual receive amount.
+
+The following MPI code fragments are needed in sum_getcount.c to get the message length
+
+    MPI_Status status;
+    MPI_Recv(array,N,MPI_DOUBLE,0,10,MPI_COMM_WORLD,&status);
+    MPI_Get_count(&status,MPI_DOUBLE,&Nloc);
+    fprintf(stderr,"rank = %d Nloc =%d Message source = %d\n",rank,Nloc,status.MPI_SOURCE);
+
+To compile the code type:
+
+make sum_getcount
+
+
+<<<<<<<<< PART 3 >>>>>>>>>>
+Change the sum_probe.c program to retrieve the status and print the number of elements sent. 
+Try to allocate the smallest amount of memory needed per MPI-task.
+
+In PART 2 process zero randomly sends up to `MAX_NUMBERS` integers to process one. Process one then calls `MPI_Recv` for a total of `MAX_NUMBERS` integers. Although process one is passing `MAX_NUMBERS` as the argument to `MPI_Recv`, process one will receive **at most** this amount of numbers. In the code, process one calls `MPI_Get_count` with `MPI_INT` as the datatype to find out how many integers were actually received. Along with printing off the size of the received message, process one also prints off the source and tag of the message by accessing the `MPI_SOURCE` and `MPI_TAG` elements of the status structure.
+
+## Using MPI_Probe to find out the message size
+Now that you understand how the `MPI_Status` object works, we can now use it to our advantage a little bit more. Instead of posting a receive and simply providing a really large buffer to handle all possible sizes of messages (as we did in the last example), you can use `MPI_Probe` to query the message size before actually receiving it. The function prototype looks like this.
+
+MPI_Probe(
+    int source,
+    int tag,
+    MPI_Comm comm,
+    MPI_Status* status)
+
+`MPI_Probe` looks quite similar to `MPI_Recv`. In fact, you can think of `MPI_Probe` as an `MPI_Recv` that does everything but receive the message. Similar to `MPI_Recv`, `MPI_Probe` will block for a message with a matching tag and sender. When the message is available, it will fill the status structure with information. The user can then use `MPI_Recv` to receive the actual message.
+
+Similar to the last example, process zero picks a random amount of numbers to send to process one. What is different in this example is that process one now calls `MPI_Probe` to find out how many elements process zero is trying to send (using `MPI_Get_count`).  Process one then allocates a buffer of the proper size and receives the numbers. Running the code will look similar to this.
+
+Although this example is trivial, `MPI_Probe` forms the basis of many dynamic MPI applications. For example, master/slave programs will often make heavy use of `MPI_Probe` when exchanging variable-sized worker messages. As an exercise, make a wrapper around `MPI_Recv` that uses `MPI_Probe` for any dynamic applications you might write. It makes the code look much nicer :-)
+
+
+The following MPI code fragments are needed in sum_probe.c to get the message size
+
+         MPI_Probe(0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+         MPI_Get_count(&status,MPI_DOUBLE,&Nloc);
+         fprintf(stderr,"Task 1 dynamically received %d numbers from Task 0.\n", Nloc);
+         array=malloc(sizeof(double)*Nloc);
+         MPI_Recv(array,Nloc,MPI_DOUBLE,0,10,MPI_COMM_WORLD,&status);
+
+To compile the code type:
+
+make sum_probe

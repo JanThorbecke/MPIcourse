@@ -1,0 +1,26 @@
+In this exercise we will implement some basic communication patterns using point-to-point operations. In comm_pattern (.c and .f90) you will find the template for this exercise. Each pattern described below will be implemented in its own function.
+
+-a- BroadcastBarrier: Send (broadcast) the same integer data from one process to all the other ones. The function will look as follows:
+
+    broadcast(buffer,count,root)
+
+where buffer is the integer array (send buffer for root process, receive buffer for the others), count is the number of elements to send, and root is the rank which has the data that is broadcasted to all other processes.
+
+After you have tested the correctness of your own implementation of the broadcast you can run the exercices in the  BroadcastBarrier directory.
+
+-b- Scatter: Here we want to scatter integer data from one process to all the other ones. This means that the data in an array is divided in equally sized chunks, each of which is sent to another process. The function will look as follows: 
+
+     scatter(sendbuf,count, recvbuf, root)
+
+
+-c- Gather: Collect integer data from all process to one, essentially the opposite operation to the one above. Each process sends one chunk of data to a root process which then collects it in one buffer. The function will look as follows: 
+
+    gather (sendbuf,count, recvbuf, root)
+
+After you have completed -b- and -c- you can go to GatherScatter directory to see how MPI has implemented the gather/scatter functionality and familiarize yourself with the arguments of the MPI defined function calls. 
+
+
+Fir those of you that are already done with the above exercises and have some time:
+
+Bonus exercises Implement the same operation as in c), but instead of gathering data to one root process you should gather it to all processes. Further, implement the same operation as in b), but instead of scattering data only from one process to all the other ones you should scatter from all to all. The operation is essentially a transpose.
+

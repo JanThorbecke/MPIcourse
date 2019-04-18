@@ -1,0 +1,182 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /cray/css/u19/jan/src/3DFD/verbosepkg.c
+Compiled : 2015-09-11  08:11:51
+Compiler : Version 8.4.0.223
+Ftnlx    : Version 8412 (libcif 84005)
+Target   : x86-64
+Command  : driver.cc -h cpu=haswell -h dynamic -D __CRAYCS -D __CRAY_HASWELL
+           -D __CRAYXT_COMPUTE_LINUX_TARGET -O 3 -h fp3 -h noomp -h list=a -I .
+           -c verbosepkg.c -W l,--rpath=/opt/cray/cce/8.4.0.223/craylibs/x86-64
+           -ibase-compiler /opt/cray/cce/8.4.0.223/CC/x86-64/compiler_include_ba
+           se -isystem /opt/cray/cce/8.4.0.223/craylibs/x86-64/include
+           -isystem /usr/local/cuda/include
+           -I /opt/gcc/4.8.1/snos/lib/gcc/x86_64-suse-linux/4.8.1/include
+           -I /opt/gcc/4.8.1/snos/lib/gcc/x86_64-suse-linux/4.8.1/include-fixed
+           -I /opt/cray/mvapich2_slurm/2.0.1.4/CRAY/8.4/include
+           -I /opt/cray/libsci/13.2.0.1/CRAY/8.3/x86_64/include
+           -I /global/opt/nvidia/cudatoolkit/7.0.28/include
+           -I /opt/cray/cce/8.4.0.223/craylibs/x86-64/include
+
+clx report
+------------
+Source   : /cray/css/u19/jan/src/3DFD/verbosepkg.c
+Date     : 09/11/2015  08:11:51
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          O p t i o n s   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Options :  -h cache2,fp3,scalar3,thread2,vector3,mpi0,ipa3,noaggress         
+           -h autoprefetch,noautothread,fusion2,nomsgs,nonegmsgs         
+           -h nooverindex,pattern,unroll2,nozeroinc         
+           -h noadd_paren,noupc,dwarf,nofp_trap,nofunc_trace         
+           -h noomp_analyze,noomp_trace,nopat_trace         
+           -h noomp,noomp_acc,noacc         
+           -h c99,noexceptions,nostrict,noinfinitevl         
+           -h notolerant,gnu         
+           -h flex_mp=default         
+           -h cpu=x86-64,haswell
+           -h network=gemini         
+           -K trap=none 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+     %%%    L o o p m a r k   L e g e n d    %%%
+
+     Primary Loop Type        Modifiers
+     ------- ---- ----        ---------
+     A - Pattern matched      a - atomic memory operation
+                              b - blocked
+     C - Collapsed            c - conditional and/or computed
+     D - Deleted               
+     E - Cloned                
+     F - Flat - No calls      f - fused
+     G - Accelerated          g - partitioned
+     I - Inlined              i - interchanged
+     M - Multithreaded        m - partitioned
+                              n - non-blocking remote transfer
+                              p - partial
+                              r - unrolled
+                              s - shortloop
+     V - Vectorized           w - unwound
+
+     + - More messages listed at end of listing
+     ------------------------------------------
+
+
+    1.     #include <stdio.h>
+    2.     #include <stdarg.h>
+    3.     #include "par.h"
+    4.     #include <string.h>
+    5.     #include <mpi.h>
+    6.     
+    7.     /**
+    8.     *  functions to print out verbose, error and warning messages to stderr.
+    9.     *
+   10.     *   AUTHOR:
+   11.     *           Jan Thorbecke (janth@xs4all.nl)
+   12.     *           The Netherlands 
+   13.     **/
+   14.     
+   15.     int my_pe;
+   16.     
+   17.     void vinit()
+   18.     {
+   19.  +  	MPI_Comm_rank(MPI_COMM_WORLD, &my_pe);
+   20.     	return;
+   21.     }
+   22.     
+   23.     
+   24.     
+   25.     void verr(char *fmt, ...)
+   26.     {
+   27.     	va_list args;
+   28.     
+   29.     	if (my_pe==0) {
+   30.  +  	if (EOF == fflush(stderr)) {
+   31.     		fprintf(stderr, "\nverr: fflush failed on stderr");
+   32.     	}
+   33.     	fprintf(stderr, "    Error in %s: ", xargv[0]);
+   34.     	va_start(args,fmt);
+   35.  +  	vfprintf(stderr, fmt, args);
+   36.     	va_end(args);
+   37.     	fprintf(stderr, "\n");
+   38.     	}
+   39.  +          MPI_Finalize();
+   40.  +  	exit(EXIT_FAILURE);
+   41.     }
+   42.     
+   43.     void vwarn(char *fmt, ...)
+   44.     {
+   45.     	va_list args;
+   46.     
+   47.     	if (my_pe==0) {
+   48.  +  	if (EOF == fflush(stderr)) {
+   49.     		fprintf(stderr, "\nvwarn: fflush failed on stderr");
+   50.     	}
+   51.     	fprintf(stderr, "    Warning in %s: ", xargv[0]);
+   52.     	va_start(args,fmt);
+   53.  +  	vfprintf(stderr, fmt, args);
+   54.     	va_end(args);
+   55.     	fprintf(stderr, "\n");
+   56.     	}
+   57.     	return;
+   58.     }
+   59.     
+   60.     void vmess(char *fmt, ...)
+   61.     {
+   62.     	va_list args;
+   63.     
+   64.     	if (my_pe==0) {
+   65.  +  	if (EOF == fflush(stderr)) {
+   66.     		fprintf(stderr, "\nvmess: fflush failed on stderr");
+   67.     	}
+   68.     	fprintf(stderr, "    %s: ", xargv[0]);
+   69.     	va_start(args,fmt);
+   70.  +  	vfprintf(stderr, fmt, args);
+   71.     	va_end(args);
+   72.     	fprintf(stderr, "\n");
+   73.     	}
+   74.     	return;
+   75.     }
+
+CC-3021 CC: IPA File = verbosepkg.c, Line = 19 
+  "MPI_Comm_rank" (called from "vinit") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = verbosepkg.c, Line = 30 
+  "fflush" (called from "verr") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = verbosepkg.c, Line = 35 
+  "vfprintf" (called from "verr") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = verbosepkg.c, Line = 39 
+  "MPI_Finalize" (called from "verr") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = verbosepkg.c, Line = 40 
+  "exit" (called from "verr") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = verbosepkg.c, Line = 48 
+  "fflush" (called from "vwarn") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = verbosepkg.c, Line = 53 
+  "vfprintf" (called from "vwarn") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = verbosepkg.c, Line = 65 
+  "fflush" (called from "vmess") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = verbosepkg.c, Line = 70 
+  "vfprintf" (called from "vmess") was not inlined because the compiler was unable to locate the routine.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

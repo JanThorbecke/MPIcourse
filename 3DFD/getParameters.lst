@@ -1,0 +1,2219 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /cray/css/u19/jan/src/3DFD/getParameters.c
+Compiled : 2015-09-11  08:11:46
+Compiler : Version 8.4.0.223
+Ftnlx    : Version 8412 (libcif 84005)
+Target   : x86-64
+Command  : driver.cc -h cpu=haswell -h dynamic -D __CRAYCS -D __CRAY_HASWELL
+           -D __CRAYXT_COMPUTE_LINUX_TARGET -O 3 -h fp3 -h noomp -h list=a -I .
+           -c getParameters.c
+           -W l,--rpath=/opt/cray/cce/8.4.0.223/craylibs/x86-64
+           -ibase-compiler /opt/cray/cce/8.4.0.223/CC/x86-64/compiler_include_ba
+           se -isystem /opt/cray/cce/8.4.0.223/craylibs/x86-64/include
+           -isystem /usr/local/cuda/include
+           -I /opt/gcc/4.8.1/snos/lib/gcc/x86_64-suse-linux/4.8.1/include
+           -I /opt/gcc/4.8.1/snos/lib/gcc/x86_64-suse-linux/4.8.1/include-fixed
+           -I /opt/cray/mvapich2_slurm/2.0.1.4/CRAY/8.4/include
+           -I /opt/cray/libsci/13.2.0.1/CRAY/8.3/x86_64/include
+           -I /global/opt/nvidia/cudatoolkit/7.0.28/include
+           -I /opt/cray/cce/8.4.0.223/craylibs/x86-64/include
+
+clx report
+------------
+Source   : /cray/css/u19/jan/src/3DFD/getParameters.c
+Date     : 09/11/2015  08:11:47
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          O p t i o n s   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Options :  -h cache2,fp3,scalar3,thread2,vector3,mpi0,ipa3,noaggress         
+           -h autoprefetch,noautothread,fusion2,nomsgs,nonegmsgs         
+           -h nooverindex,pattern,unroll2,nozeroinc         
+           -h noadd_paren,noupc,dwarf,nofp_trap,nofunc_trace         
+           -h noomp_analyze,noomp_trace,nopat_trace         
+           -h noomp,noomp_acc,noacc         
+           -h c99,noexceptions,nostrict,noinfinitevl         
+           -h notolerant,gnu         
+           -h flex_mp=default         
+           -h cpu=x86-64,haswell
+           -h network=gemini         
+           -K trap=none 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+     %%%    L o o p m a r k   L e g e n d    %%%
+
+     Primary Loop Type        Modifiers
+     ------- ---- ----        ---------
+     A - Pattern matched      a - atomic memory operation
+                              b - blocked
+     C - Collapsed            c - conditional and/or computed
+     D - Deleted               
+     E - Cloned                
+     F - Flat - No calls      f - fused
+     G - Accelerated          g - partitioned
+     I - Inlined              i - interchanged
+     M - Multithreaded        m - partitioned
+                              n - non-blocking remote transfer
+                              p - partial
+                              r - unrolled
+                              s - shortloop
+     V - Vectorized           w - unwound
+
+     + - More messages listed at end of listing
+     ------------------------------------------
+
+
+    1.              #include<stdlib.h>
+    2.              #include<stdio.h>
+    3.              #include<math.h>
+    4.              #include<assert.h>
+    5.              #include"par.h"
+    6.              #include"fdelmodc.h"
+    7.              
+    8.              #define MAX(x,y) ((x) > (y) ? (x) : (y))
+    9.              #define MIN(x,y) ((x) < (y) ? (x) : (y))
+   10.              #define NINT(x) ((int)((x)>0.0?(x)+0.5:(x)-0.5))
+   11.              
+   12.              /**
+   13.              *
+   14.              *  The routine getParameters reads in all parameters to set up a FD modeling.
+   15.              *  Model and source parameters are used to calculate stability and dispersion relations
+   16.              *  Source and receiver positions are calculated and checked if they fit into the model.
+   17.              *
+   18.              *   AUTHOR:
+   19.              *           Jan Thorbecke (janth@xs4all.nl)
+   20.              *           The Netherlands
+   21.              **/
+   22.              
+   23.              float gaussGen();
+   24.              
+   25.              int getModelInfo(char *file_name, int *n1, int *n2, float *d1, float *d2, float *f1, float *f2, float *min, float *max, int *axis, int zeroch, int verbose);
+   26.              
+   27.              int getWaveletInfo(char *file_src, int *n1, int *n2, float *d1, float *d2, float *f1, float *f2, float *fmax, int *nxm, int verbose);
+   28.               
+   29.              int getWaveletHeaders(char *file_src, int n1, int n2, float *gx, float *sx, float *gelev, float *selev, int verbose);
+   30.              
+   31.              int recvPar(recPar *rec, float sub_x0, float sub_z0, float dx, float dz, int nx, int nz);
+   32.              
+   33.              int writesufile(char *filename, float *data, int n1, int n2, float f1, float f2, float d1, float d2);
+   34.              
+   35.              int getParameters(modPar *mod, recPar *rec, snaPar *sna, wavPar *wav, srcPar *src, shotPar *shot, bndPar *bnd, int verbose)
+   36.              {
+   37.              	int isnapmax1, isnapmax2, isnapmax, sna_nrsna;
+   38.              	int n1, n2, nx, nz, nsrc, ix, axis, ioPz, is0;
+   39.              	int idzshot, idxshot;
+   40.              	int src_ix0, src_iz0, src_ix1, src_iz1;
+   41.              	int disable_check;
+   42.              	float cp_min, cp_max, cs_min, cs_max, ro_min, ro_max;
+   43.              	float stabfactor,dispfactor, cmin, dt, fmax, scl, wfct, tapfact;
+   44.              	float zstart, xstart,d1,d2,f1,f2,sub_x0,sub_z0;
+   45.              	float srcendx, srcendz, dx, dz;
+   46.              	float xsrc, zsrc, dxshot, dzshot, dtshot;
+   47.              	float dxrcv,dzrcv,dxspread,dzspread;
+   48.              	float tsnap1, tsnap2, dtsnap, dxsnap, dzsnap, dtrcv;
+   49.              	float xsnap1, xsnap2, zsnap1, zsnap2, xmax, zmax;
+   50.              	float xsrc1, xsrc2, zsrc1, zsrc2, tsrc1, tsrc2, tlength, tactive;
+   51.              	float src_angle, src_velo, p, grad2rad, rdelay;
+   52.              	float *xsrca, *zsrca, rrcv;
+   53.              	float rsrc, oxsrc, ozsrc, dphisrc, ncsrc;
+   54.              	size_t nsamp;
+   55.              	int i, j;
+   56.              	int boundary, ibnd, cfree;
+   57.              	int ntaper,tapleft,tapright,taptop,tapbottom;
+   58.              	int nxsrc, nzsrc;
+   59.              	int largeSUfile;
+   60.              	int is,ir,ntraces,length_random;
+   61.              	float rand;
+   62.              	char *name, *src_positions, tmpname[1024];
+   63.              
+   64.  +           	if (!getparint("verbose",&verbose)) verbose=0;
+   65.  +           	if (!getparint("disable_check",&disable_check)) disable_check=0;
+   66.  +           	if (!getparint("iorder",&mod->iorder)) mod->iorder=4;
+   67.  +           	if (!getparint("ischeme",&mod->ischeme)) mod->ischeme=1;
+   68.  +               if (!getparint("sh",&mod->sh)) mod->sh=0;
+   69.              
+   70.  +           	if (!getparstring("file_cp",&mod->file_cp)) {
+   71.  +           		verr("parameter file_cp required!");
+   72.              	}
+   73.  +           	if (!getparstring("file_den",&mod->file_ro)) {
+   74.  +           		verr("parameter file_den required!");
+   75.              	}
+   76.              	if (mod->ischeme>2) {
+   77.  +           		if (!getparstring("file_cs",&mod->file_cs)) {
+   78.  +           			verr("parameter file_cs required!");
+   79.              		}
+   80.              	}
+   81.  +           	if (!getparstring("file_src",&wav->file_src)) wav->file_src=NULL;
+   82.  +           	if (!getparstring("file_Fx",&wav->file_Fx)) wav->file_Fx=NULL;
+   83.  +           	if (!getparstring("file_Fz",&wav->file_Fz)) wav->file_Fz=NULL;
+   84.  +           	if (!getparstring("file_snap",&sna->file_snap)) sna->file_snap="snap.su";
+   85.  +           	if (!getparstring("file_beam",&sna->file_beam)) sna->file_beam="beam.su";
+   86.  +           	if (!getparstring("file_rcv",&rec->file_rcv)) rec->file_rcv="recv.su";
+   87.  +           	if (!getparint("grid_dir",&mod->grid_dir)) mod->grid_dir=0;
+   88.  +           	if (!getparint("src_at_rcv",&src->src_at_rcv)) src->src_at_rcv=1;
+   89.              	
+   90.              	/* read model parameters, which are used to set up source and receivers and check stability */
+   91.              	
+   92.  +           	getModelInfo(mod->file_cp, &nz, &nx, &dz, &dx, &sub_z0, &sub_x0, &cp_min, &cp_max, &axis, 1, verbose);
+   93.  +           	getModelInfo(mod->file_ro, &n1, &n2, &d1, &d2, &zstart, &xstart, &ro_min, &ro_max, &axis, 0, verbose);
+   94.  +           	assert( (ro_min != 0.0) );
+   95.              	if (NINT(100*(dx/d2)) != 100) 
+   96.  +           		vwarn("dx differs for file_cp and file_den!");
+   97.              	if (NINT(100*(dz/d1)) != 100) 
+   98.  +           		vwarn("dz differs for file_cp and file_den!");
+   99.              	if (nx != n2) 
+  100.  +           		vwarn("nx differs for file_cp and file_den!");
+  101.              	if (nz != n1) 
+  102.  +           		vwarn("nz differs for file_cp and file_den!");
+  103.              
+  104.              	if (mod->ischeme>2) {
+  105.  +           		getModelInfo(mod->file_cs, &n1, &n2, &d1, &d2, &zstart, &xstart, &cs_min, &cs_max, &axis, 1, verbose);
+  106.              		if (NINT(100*(dx/d2)) != 100) 
+  107.  +           			vwarn("dx differs for file_cp and file_cs!");
+  108.              		if (NINT(100*(dz/d1)) != 100) 
+  109.  +           			vwarn("dz differs for file_cp and file_cs!");
+  110.              		if (nx != n2) 
+  111.  +           			vwarn("nx differs for file_cp and file_cs!");
+  112.              		if (nz != n1) 
+  113.  +           			vwarn("nz differs for file_cp and file_cs!");
+  114.              	}
+  115.  +           	if (!getparint("ny",&mod->ny)) mod->ny=nx;
+  116.              	mod->dz = dz;
+  117.              	mod->dx = dx;
+  118.              	mod->nz = nz;
+  119.              	mod->nx = nx;
+  120.              	
+  121.              	/* define wavelet(s), modeling time and wavelet maximum frequency */
+  122.              
+  123.              	if (wav->file_src!=NULL) {
+  124.  +           		getWaveletInfo(wav->file_src, &wav->nt, &wav->nx, &wav->dt, &d2, &f1, &f2, &fmax, &ntraces, verbose);
+  125.              		if (wav->dt <= 0.0) {
+  126.  +           			vwarn("dt in wavelet (file_src) equal to 0.0 or negative.");
+  127.  +           			vwarn("Use parameter dt= to overule dt from file_src.");
+  128.              		}
+  129.  +           		if(!getparfloat("tmod",&mod->tmod)) mod->tmod = (wav->nt-1)*wav->dt;
+  130.  +           		if(!getparfloat("dt",&mod->dt)) mod->dt=wav->dt;
+  131.  +           		if(!getparfloat("fmax",&wav->fmax)) wav->fmax=fmax;
+  132.              	}
+  133.              	else {
+  134.              		fmax = 50;
+  135.  +           		if(!getparfloat("dt",&mod->dt)) verr("dt must be given or use file_src=");
+  136.  +           		if(!getparfloat("tmod",&mod->tmod)) verr("tmod must be given");
+  137.  +           		if(!getparfloat("fmax",&wav->fmax)) wav->fmax=fmax;
+  138.              		fmax = wav->fmax;
+  139.              		wav->dt=mod->dt;
+  140.              	}
+  141.  +           	assert(mod->dt!=0.0);
+  142.              	mod->nt = NINT(mod->tmod/mod->dt)+1;
+  143.              	dt = mod->dt;
+  144.              
+  145.  +           	if (!getparint("src_type",&src->type)) src->type=1;
+  146.  +           	if (!getparint("src_orient",&src->orient)) {
+  147.              		src->orient=1;
+  148.  +           		if (getparint("dipsrc",&src->orient)) src->orient=2; // for compatability with DELPHI's fdacmod
+  149.              	}
+  150.              	if (mod->ischeme<=2) {
+  151.              		if (src->type>1 && src->type<7)
+  152.  +           			verr("Invalid src_type for acoustic scheme!");
+  153.              	}
+  154.              	if (mod->ischeme==2 || mod->ischeme==4) {
+  155.  +           		if (!getparstring("file_qp",&mod->file_qp)) mod->file_qp=NULL;
+  156.  +           		if (!getparstring("file_qs",&mod->file_qs)) mod->file_qs=NULL;
+  157.  +           		if (!getparfloat("Qp",&mod->Qp)) mod->Qp=1;
+  158.  +           		if (!getparfloat("Qs",&mod->Qs)) mod->Qs=mod->Qp;
+  159.  +           		if (!getparfloat("fw",&mod->fw)) mod->fw=0.5*wav->fmax;
+  160.              	}
+  161.  +           	assert(src->type > 0);
+  162.              
+  163.              /* dispersion factor to 10 points per wavelength (2nd order)
+  164.                 or 5 points per wavelength (4th order) */
+  165.              
+  166.              	if (mod->iorder == 2) {
+  167.              		dispfactor=10;
+  168.              		stabfactor = 1.0/sqrt(2.0);
+  169.              	}
+  170.              	else {
+  171.              		dispfactor = 5;
+  172.              		stabfactor = 0.606; /* courant number */
+  173.              	}
+  174.                  
+  175.              
+  176.                  /* origin of model in real (non-grid) coordinates */
+  177.              	mod->x0 = sub_x0;
+  178.              	mod->z0 = sub_z0;
+  179.              	xmax = sub_x0+(nx-1)*dx;
+  180.              	zmax = sub_z0+(nz-1)*dz;
+  181.              
+  182.              	if (verbose) {
+  183.  +           		vmess("*******************************************");
+  184.  +           		vmess("************** general info ***************");
+  185.  +           		vmess("*******************************************");
+  186.  +           		vmess("tmod    = %f",mod->tmod);
+  187.  +           		vmess("ntsam   = %d   dt      = %f(%e)",mod->nt, mod->dt, mod->dt);
+  188.  +           		if (mod->ischeme == 1) vmess("Acoustic staggered grid, pressure/velocity");
+  189.  +           		if (mod->ischeme == 2) vmess("Visco-Acoustic staggered grid, pressure/velocity");
+  190.  +           		if (mod->ischeme == 3) vmess("Elastic staggered grid, stress/velocity");
+  191.  +           		if (mod->ischeme == 4) vmess("Visco-Elastic staggered grid, stress/velocity");
+  192.  +           		if (mod->grid_dir) vmess("Time reversed modelling");
+  193.  +           		else vmess("Forward modelling");
+  194.  +           		vmess("*******************************************");
+  195.  +           		vmess("*************** model info ****************");
+  196.  +           		vmess("*******************************************");
+  197.  +           		vmess("nz      = %8d   nx      = %8d", nz, nx);
+  198.  +           		vmess("dz      = %8.4f   dx      = %8.4f", dz, dx);
+  199.  +           		vmess("zmin    = %8.4f   zmax    = %8.4f", sub_z0, zmax);
+  200.  +           		vmess("xmin    = %8.4f   xmax    = %8.4f", sub_x0, xmax);
+  201.  +           		vmess("min(cp) = %9.3f  max(cp) = %9.3f", cp_min, cp_max);
+  202.  +           		if (mod->ischeme>2) vmess("min(cs) = %9.3f  max(cs) = %9.3f", cs_min, cs_max);
+  203.  +           		vmess("min(ro) = %9.3f  max(ro) = %9.3f", ro_min, ro_max);
+  204.              		if (mod->ischeme==2 || mod->ischeme==4) {
+  205.  +           			if (mod->file_qp!=NULL) vmess("Qp from file %s   ", mod->file_qp);
+  206.  +           			else vmess("Qp      = %9.3f   ", mod->Qp);
+  207.  +           			vmess("at freq = %5.3f", mod->fw);
+  208.              		}
+  209.              		if (mod->ischeme==4) {
+  210.  +           			if (mod->file_qs!=NULL) vmess("Qs from file %s   ", mod->file_qs);
+  211.  +           			else vmess("Qs      = %9.3f ", mod->Qs);
+  212.  +           			vmess("at freq = %5.3f", mod->fw);
+  213.              		}
+  214.              	}
+  215.              
+  216.              	if (mod->ischeme <= 2) {
+  217.              		cmin = cp_min;
+  218.              	}
+  219.              	else {
+  220.              		cmin = cs_min; 
+  221.              		if ( (cmin<1e-20) || (cp_min<cs_min) ) cmin=cp_min;
+  222.              	}
+  223.              
+  224.              	if (verbose) {
+  225.  +           		vmess("*******************************************");
+  226.  +           		vmess("******** dispersion and stability *********");
+  227.  +           		vmess("*******************************************");
+  228.  +           		vmess("Dispersion criterion is %3d points per wavelength: ", NINT(dispfactor));
+  229.  +           		vmess(" ====> wavelength > %f m [dx*disp]", dx*dispfactor);
+  230.              //		vmess("The minimum velocity in the model is %f",cmin);
+  231.              //		vmess("Hence, for acceptable grid-dispersion the maximum");
+  232.  +           		vmess("The maximum frequency in source wavelet must be:");
+  233.  +           		vmess(" ====> frequency < %f Hz. [Cmin/dx*disp]", cmin/(dx*dispfactor));
+  234.  +           		vmess("Stability criterion for current settings: ");
+  235.  +           		vmess(" ====> Cp < %f m/s [dx*disp/dt]", dx*stabfactor/dt);
+  236.              //		vmess("With dt = %f  maximum velocity = %f",dt, dx*stabfactor/dt);
+  237.  +           		if (wav->file_src != NULL) vmess(" For wavelet(s) in file_src fmax = %f", fmax);
+  238.  +           		vmess("Optimal discretisation for current model:");
+  239.  +           		vmess(" With maximum velocity  = %f dt <= %e", cp_max,dx*stabfactor/cp_max);
+  240.  +           		vmess(" With maximum frequency = %f dx <= %e", wav->fmax, cmin/(wav->fmax*dispfactor));
+  241.              	}
+  242.              
+  243.              	/* Check stability and dispersion setting */
+  244.              
+  245.              	if (cp_max > dx*stabfactor/dt) {
+  246.  +           		vwarn("************ ! Stability ! ****************");
+  247.  +           		vwarn("From the input file maximum P-wave velocity");
+  248.  +           		vwarn("in the current model is %f !!", cp_max);
+  249.  +           		vwarn("Hence, adjust dx >= %.4f,",cp_max*dt/stabfactor);
+  250.  +           		vwarn("    or adjust dt <= %f,",dx*stabfactor/cp_max);
+  251.  +           		vwarn("    or lower the maximum velocity below %.3f m/s.",dx*stabfactor/dt);
+  252.  +           		vwarn("***************** !!! *********************");
+  253.  +           		if (!disable_check) verr("********* leaving program *********");
+  254.              	}
+  255.              	if (wav->fmax > cmin/(dx*dispfactor)) {
+  256.  +           		vwarn("*********** ! Dispersion ! ****************");
+  257.  +           		vwarn("The maximum frequency in the source wavelet is");
+  258.  +           		vwarn("%.3f for stable modeling fmax < %.3f ", wav->fmax, cmin/(dx*dispfactor));
+  259.  +           		vwarn("Hence, adjust dx <= %.4f",cmin/(wav->fmax*dispfactor));
+  260.  +           		vwarn("  or adjust fmax <= %f (overruled with parameter fmax=),",cmin/(dx*dispfactor));
+  261.  +           		vwarn("  or increase the minimum velocity above %.3f m/s.",dx*dispfactor*wav->fmax);
+  262.  +           		vwarn("***************** !!! *********************");
+  263.  +           		if (!disable_check) verr("********* leaving program *********");
+  264.              	}
+  265.              
+  266.              	/* to support old parameter interface */
+  267.  +           	if (!getparint("cfree",&cfree)) taptop=1;
+  268.  +           	if (!getparint("tapleft",&tapleft)) tapleft=0;
+  269.  +           	if (!getparint("tapright",&tapright)) tapright=0;
+  270.  +           	if (!getparint("taptop",&taptop)) taptop=0;
+  271.  +           	if (!getparint("tapbottom",&tapbottom)) tapbottom=0;
+  272.              
+  273.              	if (tapleft) bnd->lef=4;
+  274.                  else bnd->lef=1;
+  275.              	if (tapright) bnd->rig=4;
+  276.                  else bnd->rig=1;
+  277.              	if (taptop) bnd->top=4;
+  278.                  else bnd->top=1;
+  279.              	if (tapbottom) bnd->bot=4;
+  280.                  else bnd->bot=1;
+  281.              
+  282.              	/* define the type of boundaries */
+  283.              	/* 1=free 2=pml 3=rigid 4=taper */
+  284.  +           	if (!getparint("left",&bnd->lef) && !tapleft) bnd->lef=4;
+  285.  +           	if (!getparint("right",&bnd->rig)&& !tapright) bnd->rig=4;
+  286.  +           	if (!getparint("top",&bnd->top) && !taptop) bnd->top=1;
+  287.  +           	if (!getparint("bottom",&bnd->bot) && !tapbottom) bnd->bot=4;
+  288.              
+  289.                  /* calculate default taper length to be three wavelenghts */
+  290.  +           	if (!getparint("ntaper",&ntaper)) ntaper=5*NINT((cp_max/wav->fmax)/dx);
+  291.              	bnd->ntap=ntaper;
+  292.              	
+  293.              /*
+  294.              	if (!getparint("boundary",&boundary)) boundary=1;
+  295.              	for (ibnd=0;ibnd<4;ibnd++) {
+  296.              		if (boundary == 1) {
+  297.              			bnd->free[ibnd]=1;
+  298.              			bnd->rig[ibnd]=0;
+  299.              			bnd->tap[ibnd]=0;
+  300.              		}
+  301.              		else if (boundary == 3) {
+  302.              			bnd->free[ibnd]=0;
+  303.              			bnd->rig[ibnd]=1;
+  304.              			bnd->tap[ibnd]=0;
+  305.              		}
+  306.              		else if (boundary == 4) {
+  307.              			bnd->free[ibnd]=0;
+  308.              			bnd->rig[ibnd]=0;
+  309.              			bnd->tap[ibnd]=ntaper;
+  310.              		}
+  311.              	}
+  312.              	if (!getparint("tapleft",&tapleft)) tapleft=0;
+  313.              	if (!getparint("tapright",&tapright)) tapright=0;
+  314.              	if (!getparint("taptop",&taptop)) taptop=0;
+  315.              	if (!getparint("tapbottom",&tapbottom)) tapbottom=0;
+  316.              
+  317.              	if (tapleft) {
+  318.              		bnd->free[3]=0;
+  319.              		bnd->rig[3]=0;
+  320.              		bnd->tap[3]=ntaper;
+  321.              	}
+  322.              	else {
+  323.              		bnd->tap[3]=0;
+  324.              		bnd->free[3]=1;
+  325.              	}
+  326.              	if (tapright) {
+  327.              		bnd->free[1]=0;
+  328.              		bnd->rig[1]=0;
+  329.              		bnd->tap[1]=ntaper;
+  330.              	}
+  331.              	else {
+  332.              		bnd->tap[1]=0;
+  333.              		bnd->free[1]=1;
+  334.              	}
+  335.              	
+  336.              	if (taptop) {
+  337.              		bnd->free[0]=0;
+  338.              		bnd->rig[0]=0;
+  339.              		bnd->tap[0]=ntaper;
+  340.              	}
+  341.              	else {
+  342.              		bnd->tap[0]=0;
+  343.              		bnd->free[0]=1;
+  344.              	}
+  345.              	if (tapbottom) {
+  346.              		bnd->free[2]=0;
+  347.              		bnd->rig[2]=0;
+  348.              		bnd->tap[2]=ntaper;
+  349.              	}
+  350.              	else {
+  351.              		bnd->tap[2]=0;
+  352.              		bnd->free[2]=1;
+  353.              	}
+  354.              	
+  355.              	if (cfree) {
+  356.              		bnd->free[0]=1;
+  357.              		bnd->rig[0]=0;
+  358.              		bnd->tap[0]=0;
+  359.              	}
+  360.              */
+  361.              
+  362.              
+  363.              	if (ntaper) {
+  364.              		bnd->tapx  = (float *)malloc(ntaper*sizeof(float));
+  365.              		bnd->tapz  = (float *)malloc(ntaper*sizeof(float));
+  366.              		bnd->tapxz = (float *)malloc(ntaper*ntaper*sizeof(float));
+  367.  +                   if(!getparfloat("tapfact",&tapfact)) tapfact=0.30;
+  368.              		scl = tapfact/((float)ntaper);
+  369.  + 1-------< 		for (i=0; i<ntaper; i++) {
+  370.    1         			wfct = (scl*i);
+  371.  + 1         			bnd->tapx[i] = exp(-(wfct*wfct));
+  372.    1         
+  373.    1         			wfct = (scl*(i+0.5));
+  374.    1         			bnd->tapz[i] = exp(-(wfct*wfct));
+  375.    1-------> 		}
+  376.  + 1-------< 		for (j=0; j<ntaper; j++) {
+  377.    1 Vpr4--< 			for (i=0; i<ntaper; i++) {
+  378.    1 Vpr4    				wfct = (scl*sqrt(i*i+j*j));
+  379.    1 Vpr4    				bnd->tapxz[j*ntaper+i] = exp(-(wfct*wfct));
+  380.    1 Vpr4--> 			}
+  381.    1-------> 		}
+  382.              	}
+  383.              
+  384.              /* To write tapers for in manual 
+  385.                  free(bnd->tapx);
+  386.                  bnd->tapx  = (float *)malloc(20*ntaper*sizeof(float));
+  387.                  for (j=0; j<20; j++) {
+  388.                      tapfact = j*0.1;
+  389.                      scl = tapfact/((float)ntaper);
+  390.                      for (i=0; i<ntaper; i++) {
+  391.                          wfct = (scl*i);
+  392.                          bnd->tapx[j*ntaper+i] = exp(-(wfct*wfct));
+  393.                      }
+  394.                  }
+  395.                  writesufile("tapx.su", bnd->tapx, ntaper, 20, 0.0, 0.0, 1, 1);
+  396.              */
+  397.                  
+  398.                  /* Vx: rox */
+  399.              	mod->ioXx=mod->iorder/2;
+  400.              	mod->ioXz=mod->iorder/2-1;
+  401.              	/* Vz: roz */
+  402.                  mod->ioZx=mod->iorder/2-1;
+  403.              	mod->ioZz=mod->iorder/2;
+  404.              	/* P, Txx, Tzz: lam, l2m */
+  405.              	mod->ioPx=mod->iorder/2-1;
+  406.              	mod->ioPz=mod->ioPx;
+  407.              	/* Txz: mul */
+  408.              	mod->ioTx=mod->iorder/2;
+  409.              	mod->ioTz=mod->ioTx;
+  410.              
+  411.                  /* end loop iteration in FD kernels */
+  412.                  /* Vx: rox */
+  413.              	mod->ieXx=nx+mod->ioXx;
+  414.              	mod->ieXz=nz+mod->ioXz;
+  415.              	/* Vz: roz */
+  416.              	mod->ieZx=nx+mod->ioZx;
+  417.                  mod->ieZz=nz+mod->ioZz;
+  418.              	/* P, Txx, Tzz: lam, l2m */
+  419.              	mod->iePx=nx+mod->ioPx;
+  420.              	mod->iePz=nz+mod->ioPz;
+  421.              	/* Txz: muu */
+  422.              	mod->ieTx=nx+mod->ioTx;
+  423.              	mod->ieTz=nz+mod->ioTz;
+  424.                  
+  425.                  mod->naz = mod->nz+mod->iorder;
+  426.                  mod->nax = mod->nx+mod->iorder;
+  427.              
+  428.                  /* for tapered and PML extra points are needed at the boundaries of the model */
+  429.                  
+  430.                  if (bnd->top==4 || bnd->top==2) {
+  431.                      mod->naz  += ntaper; 
+  432.                      mod->ioXz += ntaper;
+  433.                      mod->ioZz += ntaper;
+  434.                      mod->ieXz += ntaper;
+  435.                      mod->ieZz += ntaper;
+  436.              
+  437.                      /* For P/Tzz, Txx and Txz fields the tapered boundaries are calculated in the main kernels */
+  438.                      //mod->ioPz += ntaper;
+  439.                      //mod->ioTz += ntaper;
+  440.                      mod->iePz += ntaper;
+  441.                      mod->ieTz += ntaper;
+  442.              
+  443.                  }
+  444.                  if (bnd->bot==4 || bnd->bot==2) {
+  445.                      mod->naz += ntaper;
+  446.                      mod->iePz += ntaper;
+  447.                      mod->ieTz += ntaper;
+  448.                  }
+  449.                  if (bnd->lef==4 || bnd->lef==2) {
+  450.                      mod->nax += ntaper;
+  451.                      mod->ioXx += ntaper;
+  452.                      mod->ioZx += ntaper;
+  453.                      mod->ieXx += ntaper;
+  454.                      mod->ieZx += ntaper;
+  455.              
+  456.                      /* For Tzz, Txx and Txz fields the tapered boundaries are calculated in the main kernels */
+  457.                      //mod->ioPx += ntaper;
+  458.                      //mod->ioTx += ntaper;
+  459.                      mod->iePx += ntaper;
+  460.                      mod->ieTx += ntaper;
+  461.                  }
+  462.                  if (bnd->rig==4 || bnd->rig==2) {
+  463.                      mod->nax += ntaper;
+  464.                      mod->iePx += ntaper;
+  465.                      mod->ieTx += ntaper;
+  466.                  }    
+  467.              
+  468.              /*
+  469.                   fprintf(stderr,"ioXx=%d ieXx=%d\n", mod->ioXx, mod->ieXx);
+  470.                   fprintf(stderr,"ioZx=%d ieZx=%d\n", mod->ioZx, mod->ieZx);
+  471.                   fprintf(stderr,"ioPx=%d iePx=%d\n", mod->ioPx, mod->iePx);
+  472.                   fprintf(stderr,"ioTx=%d ieTx=%d\n", mod->ioTx, mod->ieTx);
+  473.                   
+  474.                   fprintf(stderr,"ioXz=%d ieXz=%d\n", mod->ioXz, mod->ieXz);
+  475.                   fprintf(stderr,"ioZz=%d ieZz=%d\n", mod->ioZz, mod->ieZz);
+  476.                   fprintf(stderr,"ioPz=%d iePz=%d\n", mod->ioPz, mod->iePz);
+  477.                   fprintf(stderr,"ioTz=%d ieTz=%d\n", mod->ioTz, mod->ieTz);
+  478.              */
+  479.              
+  480.              	/* Intialize the array which contains the topography surface */
+  481.              	ioPz=mod->ioPz;
+  482.              	bnd->surface = (int *)malloc((mod->nax+mod->naz)*sizeof(int));
+  483.  + 1-------< 	for (ix=0; ix<mod->nax+mod->naz; ix++) {
+  484.    1         		bnd->surface[ix] = ioPz;
+  485.    1-------> 	}
+  486.              
+  487.              	if (verbose) {
+  488.  +           		vmess("*******************************************");
+  489.  +           		vmess("************* boundary info ***************");
+  490.  +           		vmess("*******************************************");
+  491.  +           		vmess("***  1=free 2=pml 3=rigid 4=tapered     ***");
+  492.  +           		vmess("Top boundary    : %d",bnd->top);
+  493.  +           		vmess("Left boundary   : %d",bnd->lef);
+  494.  +           		vmess("Right boundary  : %d",bnd->rig);
+  495.  +           		vmess("Bottom boundary : %d",bnd->bot);
+  496.  +                   vmess("taper lenght = %d points",ntaper);
+  497.              	}
+  498.              
+  499.              	/* define the number and type of shots to model */
+  500.              	/* each shot can have multiple sources arranged in different ways */
+  501.                  
+  502.  +           	if (!getparfloat("xsrc",&xsrc)) xsrc=sub_x0+((nx-1)*dx)/2.0;
+  503.  +           	if (!getparfloat("zsrc",&zsrc)) zsrc=sub_z0;
+  504.              //	if (!getparint("nsrc",&nsrc)) nsrc=1;
+  505.              
+  506.  +           	if (!getparint("nshot",&shot->n)) shot->n=1;
+  507.  +           	if (!getparfloat("dxshot",&dxshot)) dxshot=dx;
+  508.  +           	if (!getparfloat("dzshot",&dzshot)) dzshot=0.0;
+  509.              
+  510.              	if (shot->n>1) {
+  511.              		idxshot=MAX(0,NINT(dxshot/dx));
+  512.              		idzshot=MAX(0,NINT(dzshot/dz));
+  513.              	}
+  514.              	else {
+  515.              		idxshot=0.0;
+  516.              		idzshot=0.0;
+  517.              	}
+  518.              	
+  519.              	/* calculate the shot positions */
+  520.              	
+  521.              	src_ix0=MAX(0,NINT((xsrc-sub_x0)/dx));
+  522.              	src_ix0=MIN(src_ix0,nx);
+  523.              	src_iz0=MAX(0,NINT((zsrc-sub_z0)/dz));
+  524.              	src_iz0=MIN(src_iz0,nz);
+  525.              	srcendx=(shot->n-1)*dxshot+xsrc;
+  526.              	srcendz=(shot->n-1)*dzshot+zsrc;
+  527.              	src_ix1=MAX(0,NINT((srcendx-sub_x0)/dx));
+  528.              	src_ix1=MIN(src_ix1,nx);
+  529.              	src_iz1=MAX(0,NINT((srcendz-sub_z0)/dz));
+  530.              	src_iz1=MIN(src_iz1,nz);
+  531.              
+  532.              	shot->x = (int *)calloc(shot->n,sizeof(int));
+  533.              	shot->z = (int *)calloc(shot->n,sizeof(int));
+  534.  + 1-------< 	for (is=0; is<shot->n; is++) {
+  535.    1         		shot->x[is] = src_ix0+is*idxshot;
+  536.    1         		shot->z[is] = src_iz0+is*idzshot;
+  537.    1         		if (shot->x[is] > nx-1) shot->n = is-1;
+  538.    1         		if (shot->z[is] > nz-1) shot->n = is-1;
+  539.    1-------> 	}
+  540.              
+  541.              	/* check if source array is defined */
+  542.              	
+  543.  +           	nxsrc = countparval("xsrca");
+  544.  +           	nzsrc = countparval("zsrca");
+  545.              	if (nxsrc != nzsrc) {
+  546.  +           		verr("Number of sources in array xsrca (%d), zsrca(%d) are not equal",nxsrc, nzsrc);
+  547.              	}
+  548.              
+  549.              	/* check if sources on a circle are defined */
+  550.              	
+  551.  +           	if (getparfloat("rsrc", &rsrc)) {
+  552.  +           		if (!getparfloat("dphisrc",&dphisrc)) dphisrc=2.0;
+  553.  +           		if (!getparfloat("oxsrc",&oxsrc)) oxsrc=0.0;
+  554.  +           		if (!getparfloat("ozsrc",&ozsrc)) ozsrc=0.0;
+  555.              		ncsrc = NINT(360.0/dphisrc);
+  556.                      src->n = nsrc;
+  557.              		
+  558.              		src->x = (int *)malloc(ncsrc*sizeof(int));
+  559.              		src->z = (int *)malloc(ncsrc*sizeof(int));
+  560.              
+  561.  + F-------< 		for (ix=0; ix<ncsrc; ix++) {
+  562.    F         			src->x[ix] = NINT((oxsrc-sub_x0+rsrc*cos(((ix*dphisrc)/360.0)*(2.0*M_PI)))/dx);
+  563.    F         			src->z[ix] = NINT((ozsrc-sub_z0+rsrc*sin(((ix*dphisrc)/360.0)*(2.0*M_PI)))/dz);
+  564.    F         			if (verbose>4) fprintf(stderr,"Source on Circle: xsrc[%d]=%d zsrc=%d\n", ix, src->x[ix], src->z[ix]);
+  565.    F-------> 		}
+  566.              		
+  567.              	}
+  568.                  
+  569.                  
+  570.                  /* TO DO propagate src_positions parameter and structure through code */
+  571.                  
+  572.  +           	if (!getparstring("src_positions",&src_positions)) src_positions="single";
+  573.              	wav->random=0;
+  574.              	src->random=0;
+  575.              	src->plane=0;
+  576.              	src->array=0;
+  577.              	src->single=0;
+  578.              	if (strstr(src_positions, "single")) src->single=1;
+  579.              	else if (strstr(src_positions, "array")) src->array=1;
+  580.              	else if (strstr(src_positions, "random")) src->random=1;
+  581.              	else if (strstr(src_positions, "plane")) src->plane=1;
+  582.              	else src->single=1;
+  583.                  
+  584.              	/* to maintain functionality of older parameters usage */
+  585.  +           	if (!getparint("src_random",&src->random)) src->random=0;
+  586.  +           	if (!getparint("plane_wave",&src->plane)) src->plane=0;
+  587.              	
+  588.              	if (src->random) {
+  589.  +           		if (!getparint("wav_random",&wav->random)) wav->random=1;
+  590.              		src->plane=0;
+  591.              		src->array=0;
+  592.              		src->single=0;
+  593.              	}
+  594.              	else {
+  595.  +           		if (!getparint("wav_random",&wav->random)) wav->random=0;
+  596.              	}
+  597.              	if (src->plane) {
+  598.              		src->random=0;
+  599.              		src->array=0;
+  600.              		src->single=0;
+  601.              	}
+  602.              
+  603.  +           	if (!wav->random) assert (wav->file_src != NULL);
+  604.              	if (wav->random) {
+  605.              		wav->nt=mod->nt;
+  606.              		wav->dt=mod->dt;
+  607.              		wav->nx=1;
+  608.              	}
+  609.              
+  610.              		
+  611.              	/* number of sources per shot modeling */
+  612.              
+  613.  +           	if (!getparint("src_window",&src->window)) src->window=0;
+  614.  +           	if (!getparfloat("src_angle",&src_angle)) src_angle=0.;
+  615.  +           	if (!getparfloat("src_velo",&src_velo)) src_velo=1500.;
+  616.  +           	if (!getparint("distribution",&src->distribution)) src->distribution=0;
+  617.  +           	if (!getparint("src_multiwav",&src->multiwav)) src->multiwav=0;
+  618.  +           	if (!getparfloat("amplitude", &src->amplitude)) src->amplitude=0.0;
+  619.  +           	if (!getparfloat("tlength", &tlength)) tlength=mod->dt*(mod->nt-1);
+  620.  +               if (!getparint("src_injectionrate", &src->injectionrate)) src->injectionrate=0;
+  621.              	if (src->random && nxsrc==0) {
+  622.  +           		if (!getparint("nsrc",&nsrc)) nsrc=1;
+  623.  +           		if (!getparint("seed",&wav->seed)) wav->seed=10;
+  624.  +           		if (!getparfloat("xsrc1", &xsrc1)) xsrc1=sub_x0;
+  625.  +           		if (!getparfloat("xsrc2", &xsrc2)) xsrc2=xmax;
+  626.  +           		if (!getparfloat("zsrc1", &zsrc1)) zsrc1=sub_z0;
+  627.  +           		if (!getparfloat("zsrc2", &zsrc2)) zsrc2=zmax;
+  628.  +           		if (!getparfloat("tsrc1", &tsrc1)) tsrc1=0.0;
+  629.  +           		if (!getparfloat("tsrc2", &tsrc2)) tsrc2=mod->tmod;
+  630.  +           		if (!getparfloat("tactive", &tactive)) tactive=tsrc2;
+  631.              		tsrc2  = MIN(tsrc2, mod->tmod);
+  632.  +           		if (!getparfloat("tlength", &tlength)) tlength=tsrc2-tsrc1;
+  633.  +           		if (!getparint("length_random", &length_random)) length_random=1;
+  634.              		dxshot = xsrc2-xsrc1;
+  635.              		dzshot = zsrc2-zsrc1;
+  636.              		dtshot = tsrc2-tsrc1;
+  637.              		if (wav->random) {
+  638.  +           			if (!getparint("src_multiwav",&src->multiwav)) src->multiwav=1;
+  639.              			if (src->multiwav) wav->nx = nsrc;
+  640.              			else wav->nx = 1;
+  641.              		}
+  642.              		if (wav->random) wav->nt = NINT(tlength/mod->dt)+1;
+  643.              		src->tbeg = (float *)malloc(nsrc*sizeof(float));
+  644.              		src->tend = (float *)malloc(nsrc*sizeof(float));
+  645.              		wav->nsamp = (size_t *)malloc((nsrc+1)*sizeof(size_t));
+  646.              		src->x = (int *)malloc(nsrc*sizeof(int));
+  647.              		src->z = (int *)malloc(nsrc*sizeof(int));
+  648.              		nsamp = 0;
+  649.  +           		srand48(wav->seed);
+  650.  + 1-------< 		for (is=0; is<nsrc; is++) {
+  651.  + 1         			rand = (float)drand48();
+  652.    1         			src->x[is] = NINT((xsrc1+rand*dxshot-sub_x0)/dx);
+  653.  + 1         			rand = (float)drand48();
+  654.    1         			src->z[is] = NINT((zsrc1+rand*dzshot-sub_z0)/dz);
+  655.  + 1         			if (length_random) rand = (float)drand48();
+  656.    1         			else rand = 0.0;
+  657.    1         			src->tbeg[is] = tsrc1+rand*(dtshot);
+  658.    1         			if (wav->random) {
+  659.    1         //				if (src->distribution) rand = fabsf(tlength+gaussGen()*tlength);
+  660.    1         //				else rand = (float)drand48()*tlength;
+  661.    1         				if (length_random!=1) rand = tlength;
+  662.    1         				src->tend[is] = MIN(src->tbeg[is]+rand, tactive);
+  663.    1         				wav->nsamp[is] = (size_t)(NINT((src->tend[is]-src->tbeg[is])/mod->dt)+1);
+  664.    1         			}
+  665.    1         			else {
+  666.    1         				src->tend[is] = MIN(src->tbeg[is]+(wav->nt-1)*wav->dt,mod->tmod);
+  667.    1         				wav->nsamp[is] = wav->nt;
+  668.    1         			}
+  669.    1         			nsamp += wav->nsamp[is];
+  670.    1         			if (verbose>3) {
+  671.  + 1         				vmess("Random xsrc=%f zsrc=%f src_tbeg=%f src_tend=%f nsamp=%ld",src->x[is]*dx, src->z[is]*dz, src->tbeg[is], src->tend[is], wav->nsamp[is]);
+  672.    1         			}
+  673.    1-------> 		}
+  674.              		wav->nsamp[nsrc] = nsamp; /* put total number of samples in last position */
+  675.              		wav->nst = nsamp; /* put total number of samples in nst part */
+  676.              
+  677.              /* write time and length of source signals */
+  678.              
+  679.              		if (verbose>3) {
+  680.              			float *dum;
+  681.              			dum = (float *)calloc(mod->nt, sizeof(float));
+  682.  + r4------< 			for (is=0; is<nsrc; is++) {
+  683.    r4        				dum[(int)floor(src->tbeg[is]/mod->dt)] = src->tend[is]-src->tbeg[is];
+  684.    r4------> 			}
+  685.              			FILE *fp;
+  686.  +           			sprintf(tmpname,"srcTimeLengthN=%d.bin",mod->nt);
+  687.  +           			fp = fopen(tmpname, "w+");
+  688.  +           			fwrite(dum, sizeof(float), mod->nt, fp);
+  689.  +           			fclose(fp);
+  690.              			free(dum);
+  691.              		}
+  692.              
+  693.              	}
+  694.              	else if (nxsrc != 0) {
+  695.              		/* source array is defined */
+  696.              		nsrc=nxsrc;
+  697.              		src->x = (int *)malloc(nsrc*sizeof(int));
+  698.              		src->z = (int *)malloc(nsrc*sizeof(int));
+  699.              		src->tbeg = (float *)malloc(nsrc*sizeof(float));
+  700.              		src->tend = (float *)malloc(nsrc*sizeof(float));
+  701.              		xsrca = (float *)malloc(nsrc*sizeof(float));
+  702.              		zsrca = (float *)malloc(nsrc*sizeof(float));
+  703.  +           		getparfloat("xsrca", xsrca);
+  704.  +           		getparfloat("zsrca", zsrca);
+  705.  + F-------< 		for (is=0; is<nsrc; is++) {
+  706.    F         			src->x[is] = NINT((xsrca[is]-sub_x0)/dx);
+  707.    F         			src->z[is] = NINT((zsrca[is]-sub_z0)/dz);
+  708.    F         			src->tbeg[is] = 0.0;
+  709.    F         			src->tend[is] = (wav->nt-1)*wav->dt;
+  710.    F         			if (verbose>3) fprintf(stderr,"Source Array: xsrc[%d]=%f zsrc=%f\n", is, xsrca[is], zsrca[is]);
+  711.    F-------> 		}
+  712.              		src->random = 1;
+  713.              		wav->nsamp = (size_t *)malloc((nsrc+1)*sizeof(size_t));
+  714.              		if (wav->random) {
+  715.  +           			if (!getparint("src_multiwav",&src->multiwav)) src->multiwav=1;
+  716.              			if (src->multiwav) wav->nx = nsrc;
+  717.              			else wav->nx = 1;
+  718.              			wav->nt = NINT(tlength/mod->dt)+1;
+  719.              			nsamp=0;
+  720.  + 1-------< 			for (is=0; is<nsrc; is++) {
+  721.  + 1         				rand = (float)drand48()*tlength;
+  722.    1         				src->tend[is] = MIN(src->tbeg[is]+rand, mod->tmod);
+  723.    1         				wav->nsamp[is] = (size_t)(NINT((src->tend[is]-src->tbeg[is])/mod->dt)+1);
+  724.    1         				nsamp += wav->nsamp[is];
+  725.    1-------> 			}
+  726.              			wav->nsamp[nsrc] = nsamp; /* put total number of samples in last position */
+  727.              			wav->nst = nsamp; /* put total number of samples in nst part */
+  728.              		}
+  729.              		else {
+  730.              			nsamp=0;
+  731.  + r4------< 			for (is=0; is<nsrc; is++) {
+  732.    r4        				wav->nsamp[is] = wav->nt;
+  733.    r4        				nsamp += wav->nsamp[is];
+  734.    r4------> 			}
+  735.              			wav->nsamp[nsrc] = nsamp; /* put total number of samples in last position */
+  736.              			wav->nst = nsamp; /* put total number of samples in nst part */
+  737.              		}
+  738.              		free(xsrca);
+  739.              		free(zsrca);
+  740.              	}
+  741.              	else if (wav->nx > 1) {
+  742.              		/* read file_src for number of sources and receiver positions */
+  743.  +           		if (!getparint("src_multiwav",&src->multiwav)) src->multiwav=1;
+  744.              		float *gx, *sx, *gelev, *selev;
+  745.              		gx = (float *)malloc(wav->nx*sizeof(float));
+  746.              		sx = (float *)malloc(wav->nx*sizeof(float));
+  747.              		gelev = (float *)malloc(wav->nx*sizeof(float));
+  748.              		selev = (float *)malloc(wav->nx*sizeof(float));
+  749.  +           		getWaveletHeaders(wav->file_src, wav->nt, wav->nx, gx, sx, gelev, selev, verbose);
+  750.              		nsrc = wav->nx;
+  751.              		src->x = (int *)malloc(nsrc*sizeof(int));
+  752.              		src->z = (int *)malloc(nsrc*sizeof(int));
+  753.              		src->tbeg = (float *)malloc(nsrc*sizeof(float));
+  754.              		src->tend = (float *)malloc(nsrc*sizeof(float));
+  755.              		wav->nsamp = (size_t *)malloc((nsrc+1)*sizeof(size_t));
+  756.              		nsamp=0;
+  757.  + F-------< 		for (is=0; is<nsrc; is++) {
+  758.    F         			if (src->src_at_rcv>0){
+  759.    F         				src->x[is] = NINT((gx[is]-sub_x0)/dx);
+  760.    F         				src->z[is] = NINT((gelev[is]-sub_z0)/dz);
+  761.    F         				if (verbose>3) fprintf(stderr,"Source Array: xsrc[%d]=%f %d zsrc=%f %d\n", is, gx[is], src->x[is], gelev[is], src->z[is]);
+  762.    F         			}
+  763.    F         			else {
+  764.    F                         src->x[is]=NINT((sx[is]-sub_x0)/dx);
+  765.    F                         src->z[is]=NINT((selev[is]-sub_z0)/dz);
+  766.    F         				if (verbose>3) fprintf(stderr,"Source Array: xsrc[%d]=%f %d zsrc=%f %d\n", is, sx[is], src->x[is], selev[is], src->z[is]);
+  767.    F         			}
+  768.    F         			src->tbeg[is] = 0.0;
+  769.    F         			src->tend[is] = (wav->nt-1)*wav->dt;
+  770.    F         			wav->nsamp[is] = (size_t)(NINT((src->tend[is]-src->tbeg[is])/mod->dt)+1);
+  771.    F         			nsamp += wav->nsamp[is];
+  772.    F-------> 		}
+  773.              		wav->nsamp[nsrc] = nsamp; /* put total number of samples in last position */
+  774.              		free(gx);
+  775.              		free(sx);
+  776.              		free(gelev);
+  777.              		free(selev);
+  778.              	}
+  779.              	else {
+  780.  +           		if (src->plane) { if (!getparint("nsrc",&nsrc)) nsrc=1;}
+  781.              		else nsrc=1;
+  782.              
+  783.              		if (nsrc > nx) {
+  784.  +           			vwarn("Number of sources used in plane wave is larger than ");
+  785.  +           			vwarn("number of gridpoints in X. Plane wave will be clipped to the edges of the model");
+  786.              			nsrc = mod->nx;
+  787.              		}
+  788.              
+  789.              	/* for a source defined on mutliple gridpoint calculate p delay factor */
+  790.              
+  791.              		src->x = (int *)malloc(nsrc*sizeof(int));
+  792.              		src->z = (int *)malloc(nsrc*sizeof(int));
+  793.              		src->tbeg = (float *)malloc(nsrc*sizeof(float));
+  794.              		src->tend = (float *)malloc(nsrc*sizeof(float));
+  795.              		grad2rad = 17.453292e-3;
+  796.              		p = sin(src_angle*grad2rad)/src_velo;
+  797.              		if (p < 0.0) {
+  798.  + r4------< 			for (is=0; is<nsrc; is++) {
+  799.    r4        				src->tbeg[is] = fabsf((nsrc-is-1)*dx*p);
+  800.    r4------> 			}
+  801.              		}
+  802.              		else {
+  803.  + r4------< 			for (is=0; is<nsrc; is++) {
+  804.    r4        				src->tbeg[is] = is*dx*p;
+  805.    r4------> 			}
+  806.              		}
+  807.  + r4------< 		for (is=0; is<nsrc; is++) {
+  808.    r4        			src->tend[is] = src->tbeg[is] + (wav->nt-1)*wav->dt;
+  809.    r4------> 		}
+  810.              		
+  811.              		is0 = -1*floor((nsrc-1)/2);
+  812.  + 1-------< 		for (is=0; is<nsrc; is++) {
+  813.    1         			src->x[is] = is0 + is;
+  814.    1         			src->z[is] = 0;
+  815.    1-------> 		}
+  816.              		
+  817.              		if (wav->random) {
+  818.  +           			if (!getparint("src_multiwav",&src->multiwav)) src->multiwav=1;
+  819.              			if (src->multiwav) wav->nx = nsrc;
+  820.              			else wav->nx = 1;
+  821.              			wav->nt = NINT(tlength/mod->dt)+1;
+  822.              			wav->nsamp = (size_t *)malloc((wav->nx+1)*sizeof(size_t));
+  823.              			nsamp=0;
+  824.  + 1-------< 			for (is=0; is<wav->nx; is++) {
+  825.  + 1         				rand = (float)drand48()*tlength;
+  826.    1         				src->tend[is] = MIN(src->tbeg[is]+rand, mod->tmod);
+  827.    1         				wav->nsamp[is] = (size_t)(NINT((src->tend[is]-src->tbeg[is])/mod->dt)+1);
+  828.    1         				nsamp += wav->nsamp[is];
+  829.    1-------> 			}
+  830.              			wav->nsamp[nsrc] = nsamp; /* put total number of samples in last position */
+  831.              			wav->nst = nsamp; /* put total number of samples in nst part */
+  832.              		}
+  833.              		else {
+  834.              			wav->nsamp = (size_t *)malloc((nsrc+1)*sizeof(size_t));
+  835.              			nsamp=0;
+  836.  + r4------< 			for (is=0; is<nsrc; is++) {
+  837.    r4        				wav->nsamp[is] = wav->nt;
+  838.    r4        				nsamp += wav->nsamp[is];
+  839.    r4------> 			}
+  840.              			wav->nsamp[nsrc] = nsamp; /* put total number of samples in last position */
+  841.              			wav->nst = nsamp; /* put total number of samples in nst part */
+  842.              		}
+  843.              	}
+  844.              
+  845.              	if (src->multiwav) {
+  846.              		if (wav->nx != nsrc) {
+  847.  +           			vwarn("src_multiwav has been defined but number of traces in");
+  848.  +           			vwarn("file_src = %d is not equal to nsrc = %d", wav->nx, nsrc);
+  849.  +           			vwarn("last trace in file_src will be repeated.");
+  850.              		}
+  851.              		else {
+  852.  +           			if (wav->file_src != NULL) vmess("Using all traces in file_src for areal shot");
+  853.              		}
+  854.              	}
+  855.              	src->n=nsrc;
+  856.              
+  857.              
+  858.              	if (verbose) {
+  859.  +           		vmess("*******************************************");
+  860.  +           		vmess("************* wavelet info ****************");
+  861.  +           		vmess("*******************************************");
+  862.  +           		vmess("wav_nt   = %6d   wav_nx      = %d", wav->nt, wav->nx);
+  863.  +           		vmess("src_type = %6d   src_orient  = %d", src->type, src->orient);
+  864.  +           		vmess("fmax     = %8.2f", fmax);
+  865.              		fprintf(stderr,"    %s: Source type         : ",xargv[0]);
+  866.              		switch ( src->type ) {
+  867.              			case 1 : fprintf(stderr,"P "); break;
+  868.              			case 2 : fprintf(stderr,"Txz "); break;
+  869.              			case 3 : fprintf(stderr,"Tzz "); break;
+  870.              			case 4 : fprintf(stderr,"Txx "); break;
+  871.              			case 5 : fprintf(stderr,"S-potential"); break;
+  872.              			case 6 : fprintf(stderr,"Fx "); break;
+  873.              			case 7 : fprintf(stderr,"Fz "); break;
+  874.              			case 8 : fprintf(stderr,"P-potential"); break;
+  875.              		}
+  876.              		fprintf(stderr,"\n");
+  877.  +           		if (wav->random) vmess("Wavelet has a random signature with fmax=%.2f", wav->fmax);
+  878.              		if (src->n>1) {
+  879.  +           			vmess("*******************************************");
+  880.  +           			vmess("*********** source array info *************");
+  881.  +           			vmess("*******************************************");
+  882.  +           			vmess("Areal source array is defined with %d sources.",nsrc);
+  883.              /*			vmess("Memory requirement for sources = %.2f MB.",sizeof(float)*(wav->nx*(wav->nt/(1024.0*1024.0))));*/
+  884.  +           			vmess("Memory requirement for sources = %.2f MB.",sizeof(float)*(nsamp/(1024.0*1024.0)));
+  885.  +           			if (src->plane) vmess("Computed p-value = %f.",p);
+  886.              		}
+  887.              		if (src->random) {
+  888.  +           		vmess("Sources are placed at random locations in domain: ");
+  889.  +           		vmess(" x[%.2f : %.2f]  z[%.2f : %.2f] ", xsrc1, xsrc2, zsrc1, zsrc2);
+  890.  +           		vmess(" and all start in time window  t[%.3f : %.3f].", tsrc1, tsrc2);
+  891.  +           		vmess(" after time %.3f the sources will not be active anymore.", tactive);
+  892.              		}
+  893.              	}
+  894.              
+  895.              	/* define snapshots and beams */
+  896.              
+  897.  +           	if (!getparfloat("tsnap1", &tsnap1)) tsnap1=0.1;
+  898.  +           	if (!getparfloat("tsnap2", &tsnap2)) tsnap2=0.0;
+  899.  +           	if (!getparfloat("dtsnap", &dtsnap)) dtsnap=0.1;
+  900.  +           	if (!getparfloat("dxsnap", &dxsnap)) dxsnap=dx;
+  901.  +           	if (!getparfloat("dzsnap", &dzsnap)) dzsnap=dz;
+  902.  +           	if (!getparfloat("xsnap1", &xsnap1)) xsnap1=sub_x0;
+  903.  +           	if (!getparfloat("xsnap2", &xsnap2)) xsnap2=xmax;
+  904.  +           	if (!getparfloat("zsnap1", &zsnap1)) zsnap1=sub_z0;
+  905.  +           	if (!getparfloat("zsnap2", &zsnap2)) zsnap2=zmax;
+  906.  +           	if (!getparint("sna_vxvztime", &sna->vxvztime)) sna->vxvztime=0;
+  907.  +           	if (!getparint("beam", &sna->beam)) sna->beam=0;
+  908.              
+  909.  +           	if (!getparint("sna_type_vz", &sna->type.vz)) sna->type.vz=1;
+  910.  +           	if (!getparint("sna_type_vx", &sna->type.vx)) sna->type.vx=0;
+  911.              	if (mod->ischeme>2) {
+  912.              		sna->type.p=0;
+  913.  +           		if (!getparint("sna_type_txx", &sna->type.txx)) sna->type.txx=0;
+  914.  +           		if (!getparint("sna_type_tzz", &sna->type.tzz)) sna->type.tzz=0;
+  915.  +           		if (!getparint("sna_type_txz", &sna->type.txz)) sna->type.txz=0;
+  916.  +           		if (!getparint("sna_type_pp", &sna->type.pp)) sna->type.pp=0;
+  917.  +           		if (!getparint("sna_type_ss", &sna->type.ss)) sna->type.ss=0;
+  918.              	}
+  919.              	else {
+  920.  +           		if (!getparint("sna_type_p", &sna->type.p)) sna->type.p=1;
+  921.              		sna->type.txx=0;
+  922.              		sna->type.tzz=0;
+  923.              		sna->type.txz=0;
+  924.              		sna->type.pp=0;
+  925.              		sna->type.ss=0;
+  926.              	}
+  927.              
+  928.              	sna->nsnap = 0;
+  929.              	if (tsnap2 >= tsnap1) {
+  930.              		sna_nrsna   = 1+NINT((tsnap2-tsnap1)/dtsnap);
+  931.              		sna->skipdt = MAX(1,NINT(dtsnap/dt));
+  932.              		sna->skipdx = MAX(1,NINT(dxsnap/dx));
+  933.              		sna->skipdz = MAX(1,NINT(dzsnap/dz));
+  934.              		sna->delay  = NINT(tsnap1/dt);
+  935.              		isnapmax1   = (sna_nrsna-1)*sna->skipdt;
+  936.              		isnapmax2   = floor( (mod->nt-(sna->delay + 1))/sna->skipdt) * sna->skipdt;
+  937.              		isnapmax    = (sna->delay + 1) + MIN(isnapmax1,isnapmax2);
+  938.              		sna->nsnap  = floor((isnapmax-(sna->delay + 1))/sna->skipdt) + 1;
+  939.              
+  940.              		sna->x1=NINT((MIN(MAX(sub_x0,xsnap1),xmax)-sub_x0)/dx);
+  941.              		sna->x2=NINT((MIN(MAX(sub_x0,xsnap2),xmax)-sub_x0)/dx);
+  942.              		sna->z1=NINT((MIN(MAX(sub_z0,zsnap1),zmax)-sub_z0)/dz);
+  943.              		sna->z2=NINT((MIN(MAX(sub_z0,zsnap2),zmax)-sub_z0)/dz);
+  944.              		dxsnap=dx*sna->skipdx;
+  945.              		dzsnap=dz*sna->skipdz;
+  946.              		sna->nx=1+(((sna->x2-sna->x1))/sna->skipdx);
+  947.              		sna->nz=1+(((sna->z2-sna->z1))/sna->skipdz);
+  948.              
+  949.              		if (verbose) {
+  950.  +           			vmess("*******************************************");
+  951.  +           			vmess("************* snap shot info **************");
+  952.  +           			vmess("*******************************************");
+  953.  +           			vmess("tsnap1  = %f tsnap2  = %f ", tsnap1, tsnap2);
+  954.  +           			vmess("dtsnap  = %f Nsnap   = %d ", dtsnap, sna->nsnap);
+  955.  +           			vmess("nzsnap  = %d nxsnap  = %d ", sna->nz, sna->nx);
+  956.  +           			vmess("dzsnap  = %f dxsnap  = %f ", dzsnap, dxsnap);
+  957.  +           			vmess("zmin    = %f zmax    = %f ", sub_z0+dz*sna->z1, sub_z0+dz*sna->z2);
+  958.  +           			vmess("xmin    = %f xmax    = %f ", sub_x0+dx*sna->x1, sub_x0+dx*sna->x2);
+  959.  +           			if (sna->vxvztime) vmess("vx/vz snapshot time  : t+0.5*dt ");
+  960.  +           			else vmess("vx/vz snapshot time  : t-0.5*dt ");
+  961.              			fprintf(stderr,"    %s: Snapshot types        : ",xargv[0]);
+  962.              			if (sna->type.vz) fprintf(stderr,"Vz ");
+  963.              			if (sna->type.vx) fprintf(stderr,"Vx ");
+  964.              			if (sna->type.p) fprintf(stderr,"p ");
+  965.              			if (mod->ischeme>2) {
+  966.              				if (sna->type.txx) fprintf(stderr,"Txx ");
+  967.              				if (sna->type.tzz) fprintf(stderr,"Tzz ");
+  968.              				if (sna->type.txz) fprintf(stderr,"Txz ");
+  969.              				if (sna->type.pp) fprintf(stderr,"P ");
+  970.              				if (sna->type.ss) fprintf(stderr,"S ");
+  971.              			}
+  972.              			fprintf(stderr,"\n");
+  973.              		}
+  974.              	}
+  975.              	else {
+  976.              		sna->nsnap = 0;
+  977.  +           		if (verbose) vmess("*************** no snapshots **************");
+  978.              	}
+  979.              	if (sna->beam) {
+  980.              		sna->skipdx = MAX(1,NINT(dxsnap/dx));
+  981.              		sna->skipdz = MAX(1,NINT(dzsnap/dz));
+  982.              		sna->x1=NINT((MIN(MAX(sub_x0,xsnap1),xmax)-sub_x0)/dx);
+  983.              		sna->x2=NINT((MIN(MAX(sub_x0,xsnap2),xmax)-sub_x0)/dx);
+  984.              		sna->z1=NINT((MIN(MAX(sub_z0,zsnap1),zmax)-sub_z0)/dz);
+  985.              		sna->z2=NINT((MIN(MAX(sub_z0,zsnap2),zmax)-sub_z0)/dz);
+  986.              		dxsnap=dx*sna->skipdx;
+  987.              		dzsnap=dz*sna->skipdz;
+  988.              		sna->nx=1+(((sna->x2-sna->x1))/sna->skipdx);
+  989.              		sna->nz=1+(((sna->z2-sna->z1))/sna->skipdz);
+  990.              
+  991.              		if (verbose) {
+  992.  +           			vmess("*******************************************");
+  993.  +           			vmess("**************** beam info ****************");
+  994.  +           			vmess("*******************************************");
+  995.  +           			vmess("nzsnap  = %d nxsnap  = %d ", sna->nz, sna->nx);
+  996.  +           			vmess("dzsnap  = %f dxsnap  = %f ", dzsnap, dxsnap);
+  997.  +           			vmess("zmin    = %f zmax    = %f ", sub_z0+dz*sna->z1, sub_z0+dz*sna->z2);
+  998.  +           			vmess("xmin    = %f xmax    = %f ", sub_x0+dx*sna->x1, sub_x0+dx*sna->x2);
+  999.              			fprintf(stderr,"    %s: Beam types            : ",xargv[0]);
+ 1000.              			if (sna->type.vz) fprintf(stderr,"Vz ");
+ 1001.              			if (sna->type.vx) fprintf(stderr,"Vx ");
+ 1002.              			if (sna->type.p) fprintf(stderr,"p ");
+ 1003.              			if (mod->ischeme>2) {
+ 1004.              				if (sna->type.txx) fprintf(stderr,"Txx ");
+ 1005.              				if (sna->type.tzz) fprintf(stderr,"Tzz ");
+ 1006.              				if (sna->type.txz) fprintf(stderr,"Txz ");
+ 1007.              				if (sna->type.pp) fprintf(stderr,"P ");
+ 1008.              				if (sna->type.ss) fprintf(stderr,"S ");
+ 1009.              			}
+ 1010.              			fprintf(stderr,"\n");
+ 1011.              		}
+ 1012.              	}
+ 1013.              	else {
+ 1014.  +           		if (verbose) vmess("**************** no beams *****************");
+ 1015.              	}
+ 1016.              
+ 1017.              	/* define receivers */
+ 1018.              
+ 1019.  +           	if (!getparint("largeSUfile",&largeSUfile)) largeSUfile=0;
+ 1020.  +           	if (!getparint("sinkdepth",&rec->sinkdepth)) rec->sinkdepth=0;
+ 1021.  +           	if (!getparint("sinkdepth_src",&src->sinkdepth)) src->sinkdepth=0;
+ 1022.  +           	if (!getparint("sinkvel",&rec->sinkvel)) rec->sinkvel=0;
+ 1023.  +           	if (!getparfloat("dtrcv",&dtrcv)) dtrcv=0.004;
+ 1024.              	rec->skipdt=NINT(dtrcv/dt);
+ 1025.              	dtrcv = mod->dt*rec->skipdt;
+ 1026.  +           	if (!getparfloat("rec_delay",&rdelay)) rdelay=0.0;
+ 1027.  +           	if (!getparint("rec_ntsam",&rec->nt)) rec->nt=NINT((mod->tmod-rdelay)/dtrcv)+1;
+ 1028.  +           	if (!getparint("rec_int_p",&rec->int_p)) rec->int_p=0;
+ 1029.  +           	if (!getparint("rec_int_vx",&rec->int_vx)) rec->int_vx=0;
+ 1030.  +           	if (!getparint("rec_int_vz",&rec->int_vz)) rec->int_vz=0;
+ 1031.  +           	if (!getparint("max_nrec",&rec->max_nrec)) rec->max_nrec=15000;
+ 1032.  +           	if (!getparint("scale",&rec->scale)) rec->scale=0;
+ 1033.  +           	if (!getparfloat("dxspread",&dxspread)) dxspread=0;
+ 1034.  +           	if (!getparfloat("dzspread",&dzspread)) dzspread=0;
+ 1035.              	rec->nt=MIN(rec->nt, NINT((mod->tmod-rdelay)/dtrcv)+1);
+ 1036.              	rec->delay=NINT(rdelay/mod->dt);
+ 1037.              
+ 1038.              	rec->max_nrec += rec->max_nrec+1;
+ 1039.              	rec->x  = (int *)calloc(rec->max_nrec,sizeof(int));
+ 1040.              	rec->z  = (int *)calloc(rec->max_nrec,sizeof(int));
+ 1041.              	rec->xr = (float *)calloc(rec->max_nrec,sizeof(float));
+ 1042.              	rec->zr = (float *)calloc(rec->max_nrec,sizeof(float));
+ 1043.              	
+ 1044.              	/* calculates the receiver coordinates */
+ 1045.              	
+ 1046.              //	recvPar(rec, sub_x0, sub_z0, dx, dz, nx, nz);
+ 1047.              
+ 1048.  +           	if (!getparint("rec_type_vz", &rec->type.vz)) rec->type.vz=1;
+ 1049.  +           	if (!getparint("rec_type_vx", &rec->type.vx)) rec->type.vx=0;
+ 1050.  +           	if (!getparint("rec_type_ud", &rec->type.ud)) rec->type.ud=0;
+ 1051.              	if (mod->ischeme!=1 &&  rec->type.ud==1) {
+ 1052.  +           		warn("Receiver decomposition only implemented for acoustis scheme (1)");
+ 1053.              	}
+ 1054.              	if (mod->ischeme>2) {
+ 1055.              		rec->type.p=0;
+ 1056.  +           		if (!getparint("rec_type_txx", &rec->type.txx)) rec->type.txx=0;
+ 1057.  +           		if (!getparint("rec_type_tzz", &rec->type.tzz)) rec->type.tzz=0;
+ 1058.  +           		if (!getparint("rec_type_txz", &rec->type.txz)) rec->type.txz=0;
+ 1059.  +           		if (!getparint("rec_type_pp", &rec->type.pp)) rec->type.pp=0;
+ 1060.  +           		if (!getparint("rec_type_ss", &rec->type.ss)) rec->type.ss=0;
+ 1061.              		/* for up and downgoing waves store all x-positons for Vz, Vx, Txz, Tzz into an array */
+ 1062.              	}
+ 1063.              	else {
+ 1064.  +           		if (!getparint("rec_type_p", &rec->type.p)) rec->type.p=1;
+ 1065.              		rec->type.txx=0;
+ 1066.              		rec->type.tzz=0;
+ 1067.              		rec->type.txz=0;
+ 1068.              		rec->type.pp=0;
+ 1069.              		rec->type.ss=0;
+ 1070.              		/* for up and downgoing waves store all x-positons for P and Vz into an array */
+ 1071.              	}
+ 1072.              
+ 1073.              	/* receivers are on a circle, use default interpolation to real (not on a grid-point) receiver position */
+ 1074.  +           	if (getparfloat("rrcv", &rrcv)) { 
+ 1075.  +           		if (!getparint("rec_int_p",&rec->int_p)) rec->int_p=3;
+ 1076.  +           		if (!getparint("rec_int_vx",&rec->int_vx)) rec->int_vx=3;
+ 1077.  +           		if (!getparint("rec_int_vz",&rec->int_vz)) rec->int_vz=3;
+ 1078.              	}
+ 1079.              	if (rec->int_p==3) {
+ 1080.              		rec->int_vx=3;
+ 1081.              		rec->int_vz=3;
+ 1082.              	}
+ 1083.              
+ 1084.              	if (verbose) {
+ 1085.              		if (rec->n) {
+ 1086.              			dxrcv = rec->xr[MIN(1,rec->n-1)]-rec->xr[0];
+ 1087.              			dzrcv = rec->zr[MIN(1,rec->n-1)]-rec->zr[0];
+ 1088.  +           			vmess("*******************************************");
+ 1089.  +           			vmess("************* receiver info ***************");
+ 1090.  +           			vmess("*******************************************");
+ 1091.  +           			vmess("ntrcv   = %d nrcv    = %d ", rec->nt, rec->n);
+ 1092.  +           			vmess("dtrcv   = %f              ", dtrcv );
+ 1093.  +           			vmess("dzrcv   = %f dxrcv   = %f ", dzrcv, dxrcv);
+ 1094.  +           			vmess("time-delay = %f = points = %d",  rdelay, rec->delay);
+ 1095.              			if ( fmax > (1.0/(2.0*dtrcv)) ) {
+ 1096.  +           				vwarn("Receiver time sampling (dtrcv) is aliased.");
+ 1097.  +           				vwarn("time sampling should be < %.6f", 1.0/(2.0*fmax) );
+ 1098.              			}
+ 1099.  +           			vmess("Receiver sampling can be => %.6e", 1.0/(2.0*fmax));
+ 1100.  +           			vmess("Receiver array at coordinates: ");
+ 1101.  +           			vmess("zmin    = %f zmax    = %f ", rec->zr[0]+sub_z0, rec->zr[rec->n-1]+sub_z0);
+ 1102.  +           			vmess("xmin    = %f xmax    = %f ", rec->xr[0]+sub_x0, rec->xr[rec->n-1]+sub_x0);
+ 1103.  +           			vmess("which are gridpoints: ");
+ 1104.  +           			vmess("izmin   = %d izmax   = %d ", rec->z[0], rec->z[rec->n-1]);
+ 1105.  +           			vmess("ixmin   = %d ixmax   = %d ", rec->x[0], rec->x[rec->n-1]);
+ 1106.              			if (rec->type.p) {
+ 1107.              				fprintf(stderr,"    %s: Receiver interpolation for P: ",xargv[0]);
+ 1108.              				if(rec->int_p==0) fprintf(stderr,"p->p\n");
+ 1109.              				if(rec->int_p==1) fprintf(stderr,"p->vz\n");
+ 1110.              				if(rec->int_p==2) fprintf(stderr,"p->vx\n");
+ 1111.              				if(rec->int_p==3) fprintf(stderr,"interpolate to actual (no-grid) position of receiver\n");
+ 1112.              			}
+ 1113.              			if (rec->type.vx) {
+ 1114.              				fprintf(stderr,"    %s: Receiver interpolation for Vx: ",xargv[0]);
+ 1115.              				if(rec->int_vx==0) fprintf(stderr,"vx->vx\n");
+ 1116.              				if(rec->int_vx==1) fprintf(stderr,"vx->vz\n");
+ 1117.              				if(rec->int_vx==2) fprintf(stderr,"vx->txx/tzz\n");
+ 1118.              				if(rec->int_vx==3) fprintf(stderr,"interpolate to real(no-grid) position of receiver\n");
+ 1119.              			}
+ 1120.              			if (rec->type.vz) {
+ 1121.              				fprintf(stderr,"    %s: Receiver interpolation for Vz: ",xargv[0]);
+ 1122.              				if(rec->int_vz==0) fprintf(stderr,"vz->vz\n");
+ 1123.              				if(rec->int_vz==1) fprintf(stderr,"vz->vx\n");
+ 1124.              				if(rec->int_vz==2) fprintf(stderr,"vz->txx/tzz\n");
+ 1125.              				if(rec->int_vz==3) fprintf(stderr,"interpolate to real(no-grid) position of receiver\n");
+ 1126.              			}
+ 1127.                          fprintf(stderr,"    %s: Receiver types        : ",xargv[0]);
+ 1128.              			if (rec->type.vz) fprintf(stderr,"Vz ");
+ 1129.              			if (rec->type.vx) fprintf(stderr,"Vx ");
+ 1130.              			if (rec->type.p) fprintf(stderr,"p ");
+ 1131.                  		if (rec->type.ud) fprintf(stderr,"P+ P- ");
+ 1132.              			if (mod->ischeme>2) {
+ 1133.              				if (rec->type.txx) fprintf(stderr,"Txx ");
+ 1134.              				if (rec->type.tzz) fprintf(stderr,"Tzz ");
+ 1135.              				if (rec->type.txz) fprintf(stderr,"Txz ");
+ 1136.              				if (rec->type.pp) fprintf(stderr,"P ");
+ 1137.              				if (rec->type.ss) fprintf(stderr,"S ");
+ 1138.              			}
+ 1139.              			fprintf(stderr,"\n");
+ 1140.              			if ( ( ((mod->nt*mod->dt-rec->delay)/rec->skipdt)+1) > 16384) {
+ 1141.  +           				vwarn("Number of samples in receiver file is larger that SU can handle ");
+ 1142.  +           				vwarn("use the paramater rec_ntsam=nt (with nt < 16384) to avoid this");
+ 1143.              			}
+ 1144.              			if ((mod->nt-rec->delay)*mod->dt > rec->nt*dtrcv) {
+ 1145.              				int nfiles = ceil((mod->nt*mod->dt)/(rec->nt*dtrcv));
+ 1146.              				int lastn = floor((mod->nt)%(rec->nt*rec->skipdt)/rec->skipdt)+1;
+ 1147.  +           				vmess("Receiver recordings will be written to %d files",nfiles);
+ 1148.  +           				vmess("Last file will contain %d samples",lastn);
+ 1149.              				
+ 1150.              			}
+ 1151.              		}
+ 1152.              		else {
+ 1153.  +           		 	vmess("*************** no receivers **************");
+ 1154.              		}
+ 1155.              	}
+ 1156.              
+ 1157.              	return 0;
+ 1158.              }
+ 1159.              
+
+CC-3021 CC: IPA File = getParameters.c, Line = 64 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 65 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 66 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 67 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 68 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 70 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 71 
+  "verr" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 73 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 74 
+  "verr" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 77 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 78 
+  "verr" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 81 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 82 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 83 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 84 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 85 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 86 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 87 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 88 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 92 
+  "getModelInfo" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 93 
+  "getModelInfo" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 94 
+  "__assert_fail" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 96 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 98 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 100 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 102 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 105 
+  "getModelInfo" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 107 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 109 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 111 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 113 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 115 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 124 
+  "getWaveletInfo" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 126 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 127 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 129 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 130 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 131 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 135 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 135 
+  "verr" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 136 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 136 
+  "verr" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 137 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 141 
+  "__assert_fail" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 145 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 146 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 148 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 152 
+  "verr" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 155 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 156 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 157 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 158 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 159 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 161 
+  "__assert_fail" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 183 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 184 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 185 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 186 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 187 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 188 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 189 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 190 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 191 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 192 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 193 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 194 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 195 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 196 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 197 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 198 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 199 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 200 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 201 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 202 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 203 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 205 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 206 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 207 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 210 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 211 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 212 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 225 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 226 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 227 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 228 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 229 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 232 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 233 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 234 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 235 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 237 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 238 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 239 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 240 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 246 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 247 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 248 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 249 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 250 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 251 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 252 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 253 
+  "verr" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 256 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 257 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 258 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 259 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 260 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 261 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 262 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 263 
+  "verr" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 267 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 268 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 269 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 270 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 271 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 284 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 285 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 286 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 287 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 290 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 367 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6289 CC: VECTOR File = getParameters.c, Line = 369 
+  A loop was not vectorized because a recurrence was found on "bnd" between lines 371 and 374.
+
+CC-6009 CC: SCALAR File = getParameters.c, Line = 371 
+  A floating point expression involving an induction variable was strength reduced by optimization.  This may cause numerical
+  differences.
+
+CC-6294 CC: VECTOR File = getParameters.c, Line = 376 
+  A loop was not vectorized because a better candidate was found at line 377.
+
+CC-6005 CC: SCALAR File = getParameters.c, Line = 377 
+  A loop was unrolled 4 times.
+
+CC-6209 CC: VECTOR File = getParameters.c, Line = 377 
+  A loop was partially vectorized.
+
+CC-6291 CC: VECTOR File = getParameters.c, Line = 483 
+  A loop was not vectorized because a recurrence was found between "bnd" at line 484 and "mod" at line 483.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 488 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 489 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 490 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 491 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 492 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 493 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 494 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 495 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 496 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 502 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 503 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 506 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 507 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 508 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6289 CC: VECTOR File = getParameters.c, Line = 534 
+  A loop was not vectorized because a recurrence was found on "shot" between lines 535 and 536.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 543 
+  "countparval" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 544 
+  "countparval" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 546 
+  "verr" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 551 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 552 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 553 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 554 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6287 CC: VECTOR File = getParameters.c, Line = 561 
+  A loop was not vectorized because it contains a call to function "fprintf" on line 564.
+
+CC-3182 CC: IPA File = getParameters.c, Line = 561 
+  Loop has been flattened.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 572 
+  "getparstring" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 585 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 586 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 589 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 595 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 603 
+  "__assert_fail" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 613 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 614 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 615 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 616 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 617 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 618 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 619 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 620 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 622 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 623 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 624 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 625 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 626 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 627 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 628 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 629 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 630 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 632 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 633 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 638 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 649 
+  "srand48" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6287 CC: VECTOR File = getParameters.c, Line = 650 
+  A loop was not vectorized because it contains a call to function "drand48" on line 651.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 651 
+  "drand48" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 653 
+  "drand48" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 655 
+  "drand48" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 671 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6005 CC: SCALAR File = getParameters.c, Line = 682 
+  A loop was unrolled 4 times.
+
+CC-6290 CC: VECTOR File = getParameters.c, Line = 682 
+  A loop was not vectorized because a recurrence was found between "src" and "dum" at line 683.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 686 
+  "sprintf" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 687 
+  "fopen" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 688 
+  "fwrite" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 689 
+  "fclose" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 703 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 704 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6287 CC: VECTOR File = getParameters.c, Line = 705 
+  A loop was not vectorized because it contains a call to function "fprintf" on line 710.
+
+CC-3182 CC: IPA File = getParameters.c, Line = 705 
+  Loop has been flattened.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 715 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6287 CC: VECTOR File = getParameters.c, Line = 720 
+  A loop was not vectorized because it contains a call to function "drand48" on line 721.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 721 
+  "drand48" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6005 CC: SCALAR File = getParameters.c, Line = 731 
+  A loop was unrolled 4 times.
+
+CC-6289 CC: VECTOR File = getParameters.c, Line = 731 
+  A loop was not vectorized because a recurrence was found on "wav" between lines 732 and 733.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 743 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 749 
+  "getWaveletHeaders" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6287 CC: VECTOR File = getParameters.c, Line = 757 
+  A loop was not vectorized because it contains a call to function "fprintf" on line 761.
+
+CC-3182 CC: IPA File = getParameters.c, Line = 757 
+  Loop has been flattened.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 780 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 784 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 785 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6005 CC: SCALAR File = getParameters.c, Line = 798 
+  A loop was unrolled 4 times.
+
+CC-6290 CC: VECTOR File = getParameters.c, Line = 798 
+  A loop was not vectorized because a recurrence was found between "dx" and "src" at line 799.
+
+CC-6005 CC: SCALAR File = getParameters.c, Line = 803 
+  A loop was unrolled 4 times.
+
+CC-6290 CC: VECTOR File = getParameters.c, Line = 803 
+  A loop was not vectorized because a recurrence was found between "dx" and "src" at line 804.
+
+CC-6005 CC: SCALAR File = getParameters.c, Line = 807 
+  A loop was unrolled 4 times.
+
+CC-6290 CC: VECTOR File = getParameters.c, Line = 807 
+  A loop was not vectorized because a recurrence was found between "wav" and "src" at line 808.
+
+CC-6289 CC: VECTOR File = getParameters.c, Line = 812 
+  A loop was not vectorized because a recurrence was found on "src" between lines 813 and 814.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 818 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6287 CC: VECTOR File = getParameters.c, Line = 824 
+  A loop was not vectorized because it contains a call to function "drand48" on line 825.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 825 
+  "drand48" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-6005 CC: SCALAR File = getParameters.c, Line = 836 
+  A loop was unrolled 4 times.
+
+CC-6289 CC: VECTOR File = getParameters.c, Line = 836 
+  A loop was not vectorized because a recurrence was found on "wav" between lines 837 and 838.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 847 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 848 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 849 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 852 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 859 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 860 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 861 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 862 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 863 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 864 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 877 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 879 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 880 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 881 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 882 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 884 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 885 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 888 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 889 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 890 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 891 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 897 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 898 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 899 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 900 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 901 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 902 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 903 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 904 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 905 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 906 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 907 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 909 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 910 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 913 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 914 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 915 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 916 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 917 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 920 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 950 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 951 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 952 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 953 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 954 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 955 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 956 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 957 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 958 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 959 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 960 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 977 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 992 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 993 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 994 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 995 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 996 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 997 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 998 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1014 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1019 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1020 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1021 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1022 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1023 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1026 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1027 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1028 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1029 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1030 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1031 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1032 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1033 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1034 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1048 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1049 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1050 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1052 
+  "warn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1056 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1057 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1058 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1059 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1060 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1064 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1074 
+  "getparfloat" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1075 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1076 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1077 
+  "getparint" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1088 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1089 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1090 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1091 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1092 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1093 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1094 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1096 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1097 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1099 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1100 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1101 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1102 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1103 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1104 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1105 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1141 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1142 
+  "vwarn" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1147 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1148 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = getParameters.c, Line = 1153 
+  "vmess" (called from "getParameters") was not inlined because the compiler was unable to locate the routine.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

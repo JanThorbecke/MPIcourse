@@ -1,0 +1,25 @@
+
+The ring.c code contains the basis loop of the ring algortithm.
+
+Insert the  following fucntions calls
+
+    MPI_Wait(...)
+    MPI_Recv(...)
+    MPI_Issend(...)
+   
+Into the code with the proper arguments 
+    
+man MPI_Issend gives details how to use the call.
+    
+compile with:
+
+mpicc ring.c
+
+and run with:
+
+mpirun -np 2 ./a.out
+
+Inspect the following files and reason what is different compared to the ring.f90 file you implemented. 
+
+ring_advanced_irecv_issend.c  
+ring_advanced_irecv_ssend.c

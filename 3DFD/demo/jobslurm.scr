@@ -1,0 +1,45 @@
+#!/bin/bash
+#SBATCH -n 64
+#SBATCH --exclusive
+#SBATCH -t 0:05:00
+#SBATCH --export=ALL
+
+#export MPICH_ABORT_ON_ERROR=1
+#ulimit -c unlimited
+ulimit -s unlimited
+
+#export PATH=.:/cray/css/users/jan/src/3DFD/OpenSource/bin:$PATH
+
+set -x
+cd $SLURM_SUBMIT_DIR
+
+makewave file_out=wavelet.su dt=0.001 nt=1024 fp=13 shift=1 w=g2 verbose=1
+
+makemod file_base=model.su \
+	cp0=1500 ro0=1000 sizex=2100 sizez=2100 \
+	dx=3 dz=3 orig=0,0 \
+	intt=def poly=0 cp=1650 ro=2000 \
+	x=0,2100 z=500,500 gradcp=0.5 grad=100 \
+	intt=def poly=1 cp=1800 ro=2500 \
+	x=0,800,1200,2100 z=900,1400,1400,1200 gradcp=0 grad=0 \
+	verbose=4
+
+procppn=32
+ppn=32
+nmpi=64
+export OMP_NUM_THREADS=1
+exe=/vardim/home/thorbcke/src/MPIcourse/3DFD/3dfd
+cd /vardim/home/thorbcke/src/MPIcourse/3DFD/
+rm 3dfd
+mpirun -np 1 make
+cd $SLURM_SUBMIT_DIR
+ls $exe
+
+starttime=`date +%s%N`
+
+mpirun -np $nmpi $exe file_cp=model_cp.su file_den=model_ro.su verbose=1  file_src=wavelet.su verbose=3
+
+endtime=`date +%s%N`
+runtime=$(echo "scale=9; 1.0*10^(-9)*(${endtime}-${starttime})" | bc -l)
+echo "Runtime = $runtime seconds" 
+

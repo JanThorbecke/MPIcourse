@@ -1,0 +1,24 @@
+#!/bin/bash 
+#PBS -N mpi_cart
+#PBS -j oe
+#PBS -l mppwidth=16
+#PBS -l mppnppn=16
+#PBS -S /bin/bash
+#PBS -V
+#PBS -q small
+#PBS -l walltime=00:10:00
+
+set -x
+cd $PBS_O_WORKDIR
+pwd
+
+starttime=`date +%s%N`
+
+mpirun  -np 16 ./ring_2d_sr
+
+endtime=`date +%s%N`
+
+runtime=$(echo "scale=9; 1.0*10^(-9)*(${endtime}-${starttime})" | bc -l)
+echo "Runtime = $runtime seconds" 
+
+

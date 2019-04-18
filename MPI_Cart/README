@@ -1,0 +1,26 @@
+This exercise uses some advanced MPI fucntions to set u a 2D domain decomposition.
+
+1 check the Makefile and verify if mpicc is available 
+
+2 compile the code by typing 
+
+make
+
+3 run the code  with 16 MP tasks
+
+mpirun -np 16 
+
+or 
+
+mpiexec -n 16 
+
+or use the PBS script job.slurm and submit the job to your MPI compute server. 
+
+The programs prints outs for each MPI task the neigbours.
+
+Check how is the decomposition done?
+
+Change the code to make non-peridioc boundaries in all 2 dimensions.
+
+
+

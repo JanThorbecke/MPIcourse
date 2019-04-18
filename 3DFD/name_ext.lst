@@ -1,0 +1,160 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S u m m a r y   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compilation
+-----------
+File     : /cray/css/u19/jan/src/3DFD/name_ext.c
+Compiled : 2015-09-11  08:11:51
+Compiler : Version 8.4.0.223
+Ftnlx    : Version 8412 (libcif 84005)
+Target   : x86-64
+Command  : driver.cc -h cpu=haswell -h dynamic -D __CRAYCS -D __CRAY_HASWELL
+           -D __CRAYXT_COMPUTE_LINUX_TARGET -O 3 -h fp3 -h noomp -h list=a -I .
+           -c name_ext.c -W l,--rpath=/opt/cray/cce/8.4.0.223/craylibs/x86-64
+           -ibase-compiler /opt/cray/cce/8.4.0.223/CC/x86-64/compiler_include_ba
+           se -isystem /opt/cray/cce/8.4.0.223/craylibs/x86-64/include
+           -isystem /usr/local/cuda/include
+           -I /opt/gcc/4.8.1/snos/lib/gcc/x86_64-suse-linux/4.8.1/include
+           -I /opt/gcc/4.8.1/snos/lib/gcc/x86_64-suse-linux/4.8.1/include-fixed
+           -I /opt/cray/mvapich2_slurm/2.0.1.4/CRAY/8.4/include
+           -I /opt/cray/libsci/13.2.0.1/CRAY/8.3/x86_64/include
+           -I /global/opt/nvidia/cudatoolkit/7.0.28/include
+           -I /opt/cray/cce/8.4.0.223/craylibs/x86-64/include
+
+clx report
+------------
+Source   : /cray/css/u19/jan/src/3DFD/name_ext.c
+Date     : 09/11/2015  08:11:51
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          O p t i o n s   R e p o r t
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Options :  -h cache2,fp3,scalar3,thread2,vector3,mpi0,ipa3,noaggress         
+           -h autoprefetch,noautothread,fusion2,nomsgs,nonegmsgs         
+           -h nooverindex,pattern,unroll2,nozeroinc         
+           -h noadd_paren,noupc,dwarf,nofp_trap,nofunc_trace         
+           -h noomp_analyze,noomp_trace,nopat_trace         
+           -h noomp,noomp_acc,noacc         
+           -h c99,noexceptions,nostrict,noinfinitevl         
+           -h notolerant,gnu         
+           -h flex_mp=default         
+           -h cpu=x86-64,haswell
+           -h network=gemini         
+           -K trap=none 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          S o u r c e   L i s t i n g
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+     %%%    L o o p m a r k   L e g e n d    %%%
+
+     Primary Loop Type        Modifiers
+     ------- ---- ----        ---------
+     A - Pattern matched      a - atomic memory operation
+                              b - blocked
+     C - Collapsed            c - conditional and/or computed
+     D - Deleted               
+     E - Cloned                
+     F - Flat - No calls      f - fused
+     G - Accelerated          g - partitioned
+     I - Inlined              i - interchanged
+     M - Multithreaded        m - partitioned
+                              n - non-blocking remote transfer
+                              p - partial
+                              r - unrolled
+                              s - shortloop
+     V - Vectorized           w - unwound
+
+     + - More messages listed at end of listing
+     ------------------------------------------
+
+
+    1.     #include<stdlib.h>
+    2.     #include<string.h>
+    3.     #include<stdio.h>
+    4.     
+    5.     /**
+    6.     *  inserts a character string after the filename, before the extension
+    7.     *
+    8.     *   AUTHOR:
+    9.     *           Jan Thorbecke (janth@xs4all.nl)
+   10.     *           The Netherlands 
+   11.     **/
+   12.     
+   13.     
+   14.     void name_ext(char *filename, char *extension)
+   15.     {
+   16.     	char ext[100];
+   17.     
+   18.     	if (strstr(filename, ".su") != NULL) {
+   19.  +  		sprintf(ext,"%s.su", extension);
+   20.  +  		strcpy(strstr(filename, ".su"), ext);
+   21.     	}
+   22.     	else if (strstr(filename, ".segy") != NULL) {
+   23.  +  		sprintf(ext,"%s.segy", extension);
+   24.  +  		strcpy(strstr(filename, ".segy"), ext);
+   25.     	}
+   26.     	else if (strstr(filename, ".mat") != NULL) {
+   27.  +  		sprintf(ext,"%s.mat", extension);
+   28.  +  		strcpy(strstr(filename, ".mat"), ext);
+   29.     	}
+   30.     	else if (strstr(filename, ".hdf") != NULL) {
+   31.  +  		sprintf(ext,"%s.hdf", extension);
+   32.  +  		strcpy(strstr(filename, ".hdf"), ext);
+   33.     	}
+   34.     	else if (strrchr(filename, '.') != NULL) {
+   35.  +  		sprintf(ext,"%s.su", extension);
+   36.  +  		strcpy(strrchr(filename, '.'), ext);
+   37.     	}
+   38.     	else {
+   39.  +  		sprintf(ext,"%s.su", extension);
+   40.  +  		strcat(filename, ext);
+   41.     	}
+   42.     
+   43.     	return;
+   44.     }
+
+CC-3021 CC: IPA File = name_ext.c, Line = 19 
+  "sprintf" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = name_ext.c, Line = 20 
+  "strcpy" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = name_ext.c, Line = 23 
+  "sprintf" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = name_ext.c, Line = 24 
+  "strcpy" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = name_ext.c, Line = 27 
+  "sprintf" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = name_ext.c, Line = 28 
+  "strcpy" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = name_ext.c, Line = 31 
+  "sprintf" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = name_ext.c, Line = 32 
+  "strcpy" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = name_ext.c, Line = 35 
+  "sprintf" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = name_ext.c, Line = 36 
+  "strcpy" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = name_ext.c, Line = 39 
+  "sprintf" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+CC-3021 CC: IPA File = name_ext.c, Line = 40 
+  "strcat" (called from "name_ext") was not inlined because the compiler was unable to locate the routine.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

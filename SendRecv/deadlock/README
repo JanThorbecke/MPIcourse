@@ -1,0 +1,8 @@
+Exercise 4 Deadlock
+Find out what the program deadlock (.c or .f90) is supposed to do. Run it with two processors and see what happens.
+a) Why does the program get stuck?
+b) Reorder the sends and receives in such a way that there is no deadlock.
+c) Replace the sends and receives with MPI_SENDRECV.
+d) Replace the standard sends with non-blocking sends to avoid deadlocking.
+extra
+e) Change the data to be communicated from 10^6 to 1 in the original program and run again - is there still a deadlock?

@@ -1,0 +1,23 @@
+
+
+Three examples of defined MPI data types are given:
+
+- MPI_Type_Vector (userdefined_types1) 
+- MPI_Type_Indexed (userdefined_types2) 
+- MPI_Type_Create_Subarray (userdefined_types3)
+
+By typing make all three examples will be compiled. 
+Run the code executables with 2 MPI-tasks
+
+mpirun -np 2 ....
+
+Is the code doing the correct communication?
+
+-1-
+
+  Change userdefined_types1 the dimension to 8 and sent only the odd rows to the other MPI-tasks
+
+-2-
+
+In userdefined_types3 change code to wite subarray of 2x2 in top left corner or array
+
