@@ -10,6 +10,24 @@ Insert the  following fucntions calls
 Into the code with the proper arguments 
     
 man MPI_Issend gives details how to use the call.
+
+SYNOPSIS
+       int MPI_Issend(const void *buf, int count, MPI_Datatype datatype,
+                      int dest, int tag, MPI_Comm comm, MPI_Request *request)
+
+INPUT PARAMETERS
+       buf    - initial address of sending buffer (choice)
+       count  - number of elements in sending buffer (integer)
+       datatype
+              - datatype of each sending buffer element (handle)
+       dest   - rank of destination (integer)
+       tag    - message tag (integer)
+       comm   - communicator (handle)
+
+OUTPUT PARAMETER
+       request
+              - communication request (handle)
+
     
 compile with:
 
@@ -19,7 +37,7 @@ and run with:
 
 mpirun -np 2 ./a.out
 
-Inspect the following files and reason what is different compared to the ring.f90 file you implemented. 
+Inspect the following files and reason what is different compared to the ring.c file you implemented. 
 
 ring_advanced_irecv_issend.c  
 ring_advanced_irecv_ssend.c

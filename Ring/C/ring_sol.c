@@ -58,11 +58,9 @@ int main (int argc, char *argv[])
 
   for( i = 0; i < size; i++) 
   {
-    MPI_Issend(&snd_buf, 1, MPI_INT, right, to_right,
-                          MPI_COMM_WORLD, &request);
+    MPI_Issend(&snd_buf, 1, MPI_INT, right, to_right, MPI_COMM_WORLD, &request);
    
-    MPI_Recv(&rcv_buf, 1, MPI_INT, left, to_right,
-                        MPI_COMM_WORLD, &status);
+    MPI_Recv(&rcv_buf, 1, MPI_INT, left, to_right, MPI_COMM_WORLD, &status);
     
     MPI_Wait(&request, &status);
     
