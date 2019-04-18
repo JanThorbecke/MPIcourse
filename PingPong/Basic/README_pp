@@ -21,9 +21,11 @@ Investigate how the bandwidth varies with the size of the message.
 
 You can do this using gnuplot as follows:
 Run the code inside one node and store the results in a file:
+You can submit 'intranode.slurm' to the queue by 'sbatch intranode.slurm'
 mpirun -n 2 ./a.out > intra_node.dat
 
 Run the code so that the processes are on different nodes
+You can submit 'internode.slurm' to the queue by 'sbatch internode.slurm'
 mpirun -n 2  ./a.out > inter_node.dat
 
 Start up gnuplot
