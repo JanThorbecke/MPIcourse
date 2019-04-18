@@ -31,8 +31,7 @@ int main(int argc, char *argv[]){
 /*  Transfer the blocks of rows as well as the whole x to  */
 /*  tasks */
 
-  MPI_Scatter(A, n*ndim, MPI_FLOAT, Aloc, n*ndim, 
-	      MPI_FLOAT, 0,MPI_COMM_WORLD);
+  MPI_Scatter(A, n*ndim, MPI_FLOAT, Aloc, n*ndim, MPI_FLOAT, 0,MPI_COMM_WORLD);
   MPI_Bcast(x, ndim, MPI_FLOAT, root, MPI_COMM_WORLD);
 
   for (i=0; i<n; ++i){
