@@ -1,8 +1,8 @@
 # Makefile
 
 #MPI compiler 
-MPICC	= mpicc
-MPIF90	= mpif90
+MPICC	= mpiicc
+MPIF90	= mpiifort
 #MPICC	= gcc
 MPICFLAGS 	= -O3 
 MPIFFLAGS 	= -O3
