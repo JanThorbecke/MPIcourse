@@ -29,7 +29,7 @@ As the name implies, `MPI_Comm_split` creates new communicators by "splitting" a
 
 Now let's look at a simple example where we attempt to split a single global communicator into a set of smaller communicators. In this example, we'll imagine that we've logically laid out our original communicator into a 4x4 grid of 16 processes and we want to divide the grid by row. To do this, each row will get its own color. In the image below, you can see how each group of processes with the same color on the left ends up in its own communicator on the right.
 
-Let's look at the code for this.
+Let's look at the code (split.c) for this.
 
 ```cpp
 // Get the rank and size in the original communicator

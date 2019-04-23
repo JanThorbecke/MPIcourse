@@ -1,5 +1,5 @@
 EXECS=groups split split2
-MPICC?=mpicc
+MPICC?=mpiicc
 
 all: ${EXECS}
 
