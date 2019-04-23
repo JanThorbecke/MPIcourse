@@ -2,7 +2,7 @@ program simple_matrix_vector_multiply
   ! computes Ax=y in parallel
   use mpi
   implicit none
-  integer, parameter :: n = 512, root = 0, tag = 10
+  integer, parameter :: n = 5120, root = 0, tag = 10
   real, dimension(:,:), allocatable :: A, Aloc
   real, dimension(:), allocatable :: x, y, yloc
   integer, dimension(MPI_STATUS_SIZE) :: status

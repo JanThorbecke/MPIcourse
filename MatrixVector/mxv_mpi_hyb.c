@@ -3,7 +3,7 @@
 #include <mpi.h>
 
 #define root 0
-#define n 512
+#define n 5120
 
 int main(int argc, char *argv[]){
   float *A, *Aloc;
@@ -35,18 +35,21 @@ int main(int argc, char *argv[]){
 	      MPI_FLOAT, 0,MPI_COMM_WORLD);
   MPI_Bcast(x, ndim, MPI_FLOAT, root, MPI_COMM_WORLD);
 
-#pragma omp parallel for private(i,j) shared(x,Aloc,ndim) 
+#pragma omp parallel private(i,j) shared(x,Aloc,ndim) 
   for (i=0; i<n; ++i){
+	asum = 0.0;
+#pragma omp for reduction(+:asum) 
     for (j=0; j<ndim; ++j) {
-      yloc[i] = yloc[i] + Aloc[i*ndim+j]*x[j];
+      asum = asum + Aloc[i*ndim+j]*x[j];
     }
+	yloc[i] = asum;
   }
 
 /*  Combine the full y and make it available to all tasks */
 
   MPI_Allgather(yloc, n, MPI_FLOAT, y, n, MPI_FLOAT, MPI_COMM_WORLD);
 
-  if (my_id == root) for (i=0; i<ndim; ++i) printf("%f ", y[i]);
+//  if (my_id == root) for (i=0; i<ndim; ++i) printf("%f ", y[i]);
   
   free(A); 
   free(Aloc); 

@@ -3,7 +3,7 @@
 #include <mpi.h>
 
 #define root 0
-#define n 512
+#define n 5120
 
 int main(int argc, char *argv[]){
   float *A, *Aloc;
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]){
 
   MPI_...
 
-  if (my_id == root) for (i=0; i<ndim; ++i) printf("%f ", y[i]);
+//  if (my_id == root) for (i=0; i<ndim; ++i) printf("%f ", y[i]);
   
   free(A); 
   free(Aloc); 
