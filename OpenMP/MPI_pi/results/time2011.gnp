@@ -1,0 +1,69 @@
+set data style linespoint
+set key left top 
+set mytics 10
+set xlabel 'number of cores'
+set ylabel 'time in seconds [s.]'
+set size 1.0,1.0;
+set grid
+set xtics (1,2,4,6,8,12,16,32)
+#set log x
+#set nolog y
+
+
+set term png 
+set term postscript eps color 22
+
+set xrange [1:16]
+
+set title 'Pi OpenMP'
+set output 'PI_Openmp2011.eps'
+plot 'openmpRobin' using 1:($2) title "OpenMP Xeon E5504 2.0 GHz" lw 2
+
+set xrange [4:32]
+
+set title 'Pi MPI'
+set output 'PI_MPI2011.eps'
+plot 'mpiRobin' using 1:($2) title "MPI Core i7-950 3.06 GHz" lw 2
+
+
+###### SPEED_UP #####
+set ylabel 'speed up'
+set yrange [1:16]
+set xrange [1:16]
+
+firstpe=1
+speedup(x,a) =  firstpe/(1.0-a+(firstpe*a/x))
+
+firsttime2=11.72933
+set title 'Pi Scaling OpenMP'
+set output 'PI_OpenmpSpeed2011.eps'
+plot speedup(x,1.0) title "Amdahl 1.0", 'openmpRobin' using 1:(firstpe*firsttime2/$2) title "OpenMP Xeon E5504 2.0 GHz" lw 2
+
+set yrange [1:32]
+set xrange [4:32]
+
+firstpe=4
+firsttime2=1.791423
+set title 'Pi Scaling MPI'
+set output 'PI_MPISpeed2011.eps'
+plot speedup(x,1.0) title "Amdahl 1.0", 'mpiRobin' using 1:(firstpe*firsttime2/$2) title "MPI Core i7-950 3.06 GHz" lw 2
+
+###### SPEED_UP Atom #####
+set ylabel 'speed up'
+set yrange [1:4]
+set xrange [1:4]
+
+firstpe=1
+speedup(x,a) =  firstpe/(1.0-a+(firstpe*a/x))
+
+firsttime2=48.92529
+set title 'Pi Scaling OpenMP'
+set output 'PI_OpenmpSpeedAtom2011.eps'
+plot speedup(x,1.0) title "Amdahl 1.0", 'atom' using 1:(firstpe*firsttime2/$2) title "OpenMP Intel Atom D525 1.8 GHz" lw 2
+
+set yrange [1:4]
+set xrange [1:6]
+
+set title 'Pi Scaling MPI'
+set output 'PI_MPISpeedAtom2011.eps'
+plot speedup(x,1.0) title "Amdahl 1.0", 'atompi' using 1:(firstpe*firsttime2/$2) title "MPI Intel Atom D525 1.8 GHz" lw 2

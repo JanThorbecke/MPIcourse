@@ -1,0 +1,187 @@
+
+SOLUTION to:
+
+EXERCISE 1:   REDUCTIONS OR CRITICAL SECTIONS ?
+***********************************************
+
+
+Silicon Graphics BV
+De Meern, The Netherlands
+
+March 25, 1999.
+
+
+1.  The single-CPU execution time is about 14 secs.
+
+
+2.  The wallclock times are:
+
+    2 CPUs:    ca. 9 secs.
+    3 CPUs:    ca. 7 secs.
+    4 CPUs:    ca. 5 secs.
+
+    When checking the answers, it appears that they vary from run to
+    run, and from processor count to processor count.
+
+    What happens is the following. The final result needs to be
+    aggregated by all the processors into the final answer. So,
+    two or more processors might be writing into the result 
+    simultaneously.
+
+    This is not necessarily a problem, since the a single node is a  
+    cache-coherent shared memory computer. This implies that
+    correct answers will appear as long as the final result is
+    living in one of the caches of the processors. However, in
+    this example, "prod" typically lives in a register of one 
+    (or more) CPUs. This causes the varying (and wrong) numerical
+    results.
+
+3.  In function prod, the 30-loop becomes as follows:
+
+
+    c$omp parallel do
+    c$omp&   shared(k,n,a,prod)
+    c$omp&   private(i,j)
+          do 30 i = 1, n
+             do 31 j = 2, n
+    
+                a(1,i) = a(1,i) + a(j,i)/k
+    
+     31      continue
+    
+    c$omp critical
+             prod = prod + a(1,i)
+    c$omp end critical
+    
+     30   continue
+    c$omp end parallel do
+
+
+    The wallclock times are:
+
+    2 CPUs:    ca. 10 secs.
+    3 CPUs:    ca. 6 secs.
+    4 CPUs:    ca. 6 secs.
+
+    The numerical results are the same, disregarding rounding
+    effects caused by the different order of addition of numbers
+    to prod. 
+
+    In this example, the usage of a critical section works well:
+    both correct answers and speed-ups are generated.
+
+    With the "ordered" clause and directive, it is possible to
+    force that a critical section within a parallel region is
+    executed in the same order of iterations as in sequential
+    mode. This can be done in the following way:
+
+c$omp parallel do
+c$omp&   shared(k,n,a,prod)
+c$omp&   private(i,j)
+c$omp&   ordered
+      do 30 i = 1, n
+         do 31 j = 2, n
+
+            a(1,i) = a(1,i) + a(j,i)/k
+
+ 31      continue
+
+c$omp ordered
+         prod = prod + a(1,i)
+c$omp end ordered
+
+ 30   continue
+c$omp end parallel do
+
+
+    If you compile (-O3 -qopenmp) and run on 2, 3 and 4 processors,
+    you observe that the numerical results are always the same,
+    but that the performance is completely destroyed: timing
+    results look as we have run in sequential mode.
+
+    The default way of scheduling is that the first n/p iterations
+    are scheduled for execution by thread 0, the next n/p by 
+    thread 1, etc. (p is the number of processors). In this way,
+    thread 0 has to be completely finished before thread 1 can 
+    add to prod, etc. Effectively, there is sequential execution
+    now.
+
+    A way to overcome this is to distribute the iterations in 
+    an alternative way over the threads: iteration 1,p+1,2p+1, ...
+    by thread 0, 2,p+2,2p+2, ... by thread 1, etc.
+
+    This still is static scheduling, with chunksize 1. The code
+    looks like this:
+
+c$omp parallel do
+c$omp&   shared(k,n,a,prod)
+c$omp&   private(i,j)
+c$omp&   ordered
+c$omp&   schedule(static,1)
+      do 30 i = 1, n
+         do 31 j = 2, n
+
+            a(1,i) = a(1,i) + a(j,i)/k
+
+ 31      continue
+
+c$omp ordered
+         prod = prod + a(1,i)
+c$omp end ordered
+
+ 30   continue
+c$omp end parallel do
+
+   
+4.  Loop 30 now becomes:
+
+c$omp parallel do
+c$omp&   shared(k,n,a)
+c$omp&   private(i,j)
+c$omp&   reduction(+:prod)
+      do 30 i = 1, n
+         do 31 j = 2, n
+
+            a(1,i) = a(1,i) + a(j,i)/k
+
+ 31      continue
+
+         prod = prod + a(1,i)
+
+ 30   continue
+c$omp end parallel do
+
+
+    Note that the variable prod has disappeared from the 
+    shared clause.
+
+    The wallclock times are in this case about the same as when
+    using the critical section version:
+
+    2 CPUs:   ca. 8 secs.
+    3 CPUs:   ca. 7 secs.
+    4 CPUs:   ca. 6 secs.
+
+    Another observation is that when fixing the number of processors
+    to e.g. 4, the numerical answers are always the same, which is
+    not exactly the case for the critical sections method. This is
+    is caused by the implementation of the reduction operation: 
+    each processor (thread) computes its own partial sum, after
+    which all the partial sums are added in a prescribed order.
+    This leads to always the same result for a fixed amount of
+    processors.
+   
+
+5.  The wallclock times are:
+
+    2 CPUs:   ca. 7 secs.
+    3 CPUs:   ca. 5 secs.
+    4 CPUs:   ca. 5 secs.
+
+    The numerical results are OK: the compiler observes that there
+    is a reduction, and generates similar code as when using the
+    reduction clause in the OpenMP directives. Hence, also in this
+    case, the numerical results for a fixed amount of processors are
+    always identical.
+
+

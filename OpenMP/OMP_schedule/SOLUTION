@@ -1,0 +1,126 @@
+
+SOLUTION to:
+
+EXERCISE 3:   PARALLEL SECTIONS
+*******************************
+
+
+Silicon Graphics BV
+De Meern, The Netherlands.
+
+March 26, 1999.
+
+
+1.  Two sections of the code are independent and hence can be
+    executed in parallel: the loop with label 20 and the loop with
+    label 30.
+
+    The loops are looking as follows now:
+
+c$omp  parallel
+c$omp& shared(a,b,c)
+c$omp& private(i,j,k)
+c$omp  sections
+c$omp  section
+      do 20 i = 2, n-1
+         do 21 j = 2, i
+            do 22 k = 1, m
+                    b(j,i) = b(j,i)
+     &                       + a(j  ,i-1)/k     + a(j  ,i+1)/k
+     &                       + a(j-1,i  )/k     + a(j+1,i  )/k
+     &                       + a(j-1,i-1)/(k*k) + a(j+1,i+1)/(k*k)
+     &                       + a(j-1,i+1)/(k*k) + a(j+1,i-1)/(k*k)
+ 22         continue
+ 21      continue
+ 20   continue
+
+c$omp section
+      do 30 i = 2, n-1
+         do 31 j = 2, i
+            do 32 k = 1, m
+                    c(j,i) = c(j,i)
+     &                       + a(j  ,i-1)/k     + a(j  ,i+1)/k
+     &                       + a(j-1,i  )/k     + a(j+1,i  )/k
+     &                       - a(j-1,i-1)/(k*k) - a(j+1,i+1)/(k*k)
+     &                       - a(j-1,i+1)/(k*k) - a(j+1,i-1)/(k*k)
+ 32         continue
+ 31      continue
+ 30   continue
+c$omp end sections
+c$omp end parallel
+
+
+    The wallclock times are:
+
+    1 CPU:    ca. 15 secs.
+    2 CPUs:   ca.  8 secs.
+    3 CPUS:   ca.  8 secs.
+    4 CPUs:   ca.  8 secs.
+
+    Since there are only 2 parallel sections, using more than 2 
+    processors does not generate extra speed-up. 
+
+
+2.  Observing the .optrpt files, it turns out 
+    that the compiler has decided to fuse the loops with labels
+    20 and 30 into one loop. The loop fusion might not happen 
+    always and is dependent on the used compiler.
+
+    The wallclock times are:
+
+    1 CPU:   ca. 8 secs.
+    2 CPUs:  ca. 6 secs.
+    3 CPUs:  ca. 5 secs.
+    4 CPUs:  ca. 4 secs.
+
+    The speed-up flattens when adding more and more processors.
+    The explanation for this can be found in the loops with label 
+    21 and 31: the amount of computational work for every iteration
+    i is not equal, hence leading to poor load-balancing over the
+    available processors.
+
+
+3.  The load-balancing problem can be solved by using dynamic
+    scheduling. In this way, there is a collection of computational
+    work. Each thread runs a piece out of this, and as soon as a
+    thread has finished its piece, it obtains another piece, etc.
+
+    This can be implemented in the following way:
+
+c$omp  parallel do
+c$omp& shared(a,b,c)
+c$omp& private(i,j,k)
+c$omp& schedule(runtime)
+      do 20 i = 2, n-1
+         do 21 j = 2, i
+            do 22 k = 1, m
+                    b(j,i) = b(j,i)
+     &                       + a(j  ,i-1)/k     + a(j  ,i+1)/k
+     &                       + a(j-1,i  )/k     + a(j+1,i  )/k
+     &                       + a(j-1,i-1)/(k*k) + a(j+1,i+1)/(k*k)
+     &                       + a(j-1,i+1)/(k*k) + a(j+1,i-1)/(k*k)
+ 22         continue
+ 21      continue
+ 20   continue
+c$omp  end parallel do
+
+
+    and equivalent for the loop with label 30.
+
+export OMP_SCHEDULE="static,1"
+    4 CPUs:   ca. 4 secs.
+
+export OMP_SCHEDULE="guided,100"
+    4 CPUs:   ca. 5 secs.
+
+export OMP_SCHEDULE="dynamic,1"
+    This leads to the following wallclock times:
+
+    1 CPU:    ca. 15 secs.
+    2 CPUs:   ca. 8 secs.
+    3 CPUs:   ca. 5 secs.
+    4 CPUs:   ca. 4 secs.
+
+
+
+

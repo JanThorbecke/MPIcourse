@@ -1,0 +1,26 @@
+set style data linespoint
+set key left top 
+set mytics 10
+set xlabel 'number of CPUs'
+#set ylabel 'time in seconds [s.]'
+set ylabel 'speed up'
+set yrange [0:16]
+set xrange [0:16]
+set size 1.0,1.0;
+set grid
+set xtics (1,2,4,6,12,16)
+#set log x
+#set nolog y
+
+firstpe=1
+firsttime=1.71248
+speedup(x,a) =  firstpe/(1.0-a+(firstpe*a/x))
+
+set term png 
+set term postscript eps color 22
+
+firsttime2=1.56652
+set title 'Pi Scaling'
+set output 'PI_speedup_omp.eps'
+plot speedup(x,1.0) title "Amdahl 1.0", 'OpenMPGrint' using 1:(firstpe*9.617728/$2) title "OpenMP Barcelona 2.2 GHz" lw 2
+

@@ -1,0 +1,51 @@
+     1        program test
+     2        parameter(l=400,m=400,n=400)
+     3
+     4        REAL*4 A(l,m),B(m,n),C(l,n)
+     5
+     6        do 10 j=1,m
+     7           do 11 i=1,l
+     8              A(i,j) = i
+     9   11      continue
+    10   10   continue
+    11
+    12        do 20 j=1,n
+    13           do 21 i=1,m
+    14              B(i,j) = 0.5
+    15   21      continue
+    16           B(i,i) = 1.0
+    17   20   continue
+    18
+    19        print *,"A and B initialized. Entering repetition loop"
+    20
+    21        do 40 itime=1,30
+    22           call matmul(A,B,C,l,m,n)
+    23   40   continue
+    24
+    25        print *,"Done, C(200,201) = ", C(200,201)
+    26
+    27        end
+    28
+    29
+    30        SUBROUTINE MATMUL(A,B,C,l,m,n)
+    31
+    32        INTEGER l,m,n,i,j,k
+    33
+    34        REAL*4 A(l,m),B(m,n),C(l,n)
+    35
+    36        do 30 i = 1,l
+    37           do 31 j = 1,n
+    38
+    39              C(i,j) = 0.0E+00
+    40
+    41              do 32 k = 1,m
+    42                 C(i,j)=C(i,j)+A(i,k)* B(k,j)
+    43   32         continue
+    44
+    45   31      continue
+    46   30   continue
+    47
+    48        return
+    49
+    50        end
+    51

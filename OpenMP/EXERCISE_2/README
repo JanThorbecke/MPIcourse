@@ -1,0 +1,98 @@
+
+EXERCISE 1:   REDUCTIONS OR CRITICAL SECTIONS ?
+***********************************************
+
+
+Silicon Graphics BV
+De Meern, The Netherlands
+
+March 25, 1999.
+
+
+The code for this example consists of an algorithm which initializes 
+array A  and calculates the sum of all the elements in A. This
+example shows you to be careful with using OpenMP directives.
+
+
+1.  First, compile with -O3 for single-CPU runs only. Run the
+    executable and determine the wallclock time.
+    ifort -O3 dprod.f -o dprod 
+    time ./dprod
+
+
+2.  The source code already contains some OpenMP directives in the
+    subroutine prod. Study these, and try to imagine what the 
+    compiler is supposed to do.
+
+    Now, compile for parallel execution with OpenMP (O3 -qopenmp), and run
+    the resulting executable on 2, 3 and 4 processors. Use the 
+    OMP_NUM_THREADS environment variable to set the number of
+    processors.
+
+    ifort -O3 dprod.f -qopenmp -o dprod 
+    export OMP_NUM_THREADS=2
+    time ./dprod
+
+    
+    Repeat the runs for each number of processors several times.
+    Check the wallclock time, and the correctness of the answer.
+
+    What could be the reason of this behaviour ?
+
+
+3.  The behaviour can be fixed by allowing just one processor at a
+    time to update prod. This can be done by the OpenMP principle
+    of "critical section". Use the relevant critical section
+    directives to implement this in function prod.
+
+    Compile (-O3 -qopenmp) and run on 2, 3 and 4 processors.
+
+    Check both the wallclock time and the numerical results.
+    Also, fix the number of processors and run the executable
+    a few times after another. What do you observe on the
+    numerical results ?
+
+    Suppose you do want to have the exact same answers for any
+    number of processors. Which OpenMP directives would you 
+    use in order to obtain that ?
+
+    (Hint: use the ordered clause on the parallel do, and define
+           the critical section as ordered.)
+
+    What do you observe on the performance ? What is the explanation
+    for this ?
+
+    The performance problems with the ordered clause can be overcome
+    by revisiting the scheduling of the iterations across the threads.
+    Try to figure out how the scheduling should be, and force that
+    scheduling by adding another OpenMP clause to the parallel do.  
+
+
+4.  In general, usage of critical sections may be an expensive
+    operation. An alternative (in this example) is the usage of
+    the OpenMP reduction operator. 
+
+    Go back to the original piece of code (so without the critical
+    section, ordered and schedule clauses), and instead use the OpenMP
+    reduction construct to both parallellize the code and to generate
+    correct answers.
+
+    Compile with -O3 -qopenmp and run on 2, 3 and 4 processors.
+
+    Check both the wallclock time and the numerical results.
+
+    Fix the number of processors, and run several times after
+    another. What do you observe ? How can this be explained ?
+
+
+5.  Now, delete all the OpenMP directives from the code, and compile
+    with automatic parallellization: 
+
+    ifort -O3 -parallel -diag-enable=par,openmp -qopt-report=4 dprod.f
+
+    inspect the dprod.optrpt file to see what the compiler has done. 
+
+    Run on 2, 3 and 4 processors. Check the numerical results and the wallclock
+    times.
+
+

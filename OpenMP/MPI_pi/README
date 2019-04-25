@@ -1,0 +1,84 @@
+
+Edit the Makefile and define your compiler which supports OpenMP (CC=) and define your mpi compile script (MPICC=).
+
+Type
+
+> make
+
+and two programs will be made: one called openmp_pi and one mpi_pi.
+
+First set the number of processors you want to use:
+
+> export OMP_NUM_THREADS=1
+
+if you want to use 1 thread to calculate PI. Then run your program
+
+> ./openmp_pi
+
+Now change the number in 
+
+> export OMP_NUM_THREADS=2
+
+and run the program again. This time it should be almost two times faster.
+
+If you have more cores in your system you can increase the number until the number of available cores. You can also try to use more OMP_NUM_THREADS than you have cores...
+
+
+For the MPI program it is assumed that you also can use a job scheduler (like PBS) which can schedule MPI jobs on the cluster. In the script jobpbs.scr you can change the number of nodes in the line
+
+#PBS -l nodes=1
+
+or with slurm
+
+#SBATCH --ntasks=8
+
+submit your job to the queue system with
+
+> qsub jobpbs.scr
+
+> sbatch job.slurm
+
+and check if it is running with qstat / squeue. The output you will get looks like:
+
+-bash-3.00$ qstat
+Job id           Name             User             Time Use S Queue
+---------------- ---------------- ---------------- -------- - -----
+193916.linux     MPI_PI           jan                     0 R default    
+
+
+The file MPI_PI.e193916 (where the number if the Job id) contains the results which where written to screen.
+
+-bash-3.00$ more MPI_PI.e193916
+8
+::::::::::::::
+/var/opt/torque-1.2.0p5/aux/193916.linux.ak.com
+::::::::::::::
+ak007
+ak006
+ak005
+ak004
+ak003
+ak002
+ak001
+linux.cluster01.tnw
+/home/jan/MPI_pi
+The number of intervals = 1000000000
+Running with 8 MPI processes. 
+walltime=3.277904e+00
+pi is approximately 3.1415926535897931, Error is 0.0000000000000000
+------------clean up------------
+running pbs epilogue script
+killing processes of user jan on the batch nodes
+Doing node ak007
+Doing node ak006
+Doing node ak005
+Doing node ak004
+Doing node ak003
+Doing node ak002
+Doing node ak001
+Doing node linux.cluster01.tnw
+Done
+
+If you use mpich2 you should use another jobpbs.scr for your jobs and use mpiexec in stead of mpirun to run the MPI job. The example script jobmpich2.scr show an example how to use mpich2.
+
+

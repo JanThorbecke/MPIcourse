@@ -1,0 +1,94 @@
+
+SOLUTION to:
+
+EXERCISE 1:   Matrix Multiply Using Autoparallelism
+***************************************************
+
+
+Silicon Graphics BV
+De Meern, The Netherlands.
+
+March 25, 1999.
+
+
+1.  The single-CPU execution time is about 22 seconds.
+
+2.  Note that the compiler has interchanged the loops with index
+    30, 31 and 32. 
+
+    remark #25444: Loopnest Interchanged: ( 1 2 3 ) --> ( 2 3 1 )
+
+3.  Runtimes are about:
+
+    1 CPUs:   ca. 5.9 secs.
+    2 CPUs:   ca. 3.1 secs.
+    3 CPUs:   ca. 2.1 secs.
+    4 CPUs:   ca. 1.7 secs.
+
+    The relevant environment variable to set the number of threads is
+    OMP_NUM_THREADS.  Usage:  export OMP_NUM_THREADS=2
+
+    The executable with the -qno-opt-matmul does not run parallel. In the parallel
+    executable the compiler has replaced the matrix call with a call to DGEMM 
+    and that function is OpenMP parallelized. 
+
+4.  We have seen in question 2 that the compiler interchanges the 
+    loops with label 30 and 31. We need the following OpenMP directives
+    just in front of the loop with label 30:
+
+    c$omp    parallel do
+    c$omp&   shared(l,m,n,A,B,C)
+    c$omp&   private(i,j,k)
+
+    Just after the "30 continue" line, we can insert:
+
+    c$omp end parallel do
+  
+    The output in file.l and matmul.m shows that this time, the
+    compiler has not interchanged the loops with label 30 and 31.
+
+    Runtimes are about (note to set the OMP_NUM_THREADS value to the
+    desired value, see above):
+
+    1 CPU:    ca. 22 seconds
+    2 CPUs:   ca. 11 seconds
+    3 CPUS:   ca.  9 seconds
+    4 CPUS:   ca.  7 seconds 
+
+    The parallellization now is across index i, the first index of array C.
+    This means that each processor is responsible for a certain amount
+    of rows of array C. This is not advantageous for memory access.
+
+    What happens is that false sharing occurs between the processors:
+    two processors write into the same cache line (note, not the
+    same words in the cache line !). This is the cause of the bad
+    performance.
+
+
+5.  The loop with label 31 becomes now:
+
+         do 31 j = 1,n
+
+            x = 0.0
+
+            do 32 k = 1,m
+               x = x +A(i,k)* B(k,j)
+ 32         continue
+
+            C(i,j) = x
+
+ 31      continue
+
+
+    Note that variable x should be private to each thread, so 
+    it must be included in the "c$omp&   private" clause.
+
+    Compile with -O3 -qopenmp, and run (note the OMP_NUM_THREADS 
+    environment variable):
+
+    1 CPU:    ca. 22 secs.
+    2 CPUs:   ca  11 secs.
+    3 CPUs:   ca   7 secs.
+    4 CPUs:   ca.  6 secs.
+
+

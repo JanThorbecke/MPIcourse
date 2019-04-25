@@ -1,0 +1,36 @@
+#!/bin/bash
+#Specifies the name of the file as it appears in PBS-queue
+#PBS -N MPI_PI
+#PBS -V
+#Specify in which queue the job will run (see also PBS webpages)
+#The execution time differs; small,medium,long,verylong
+#you can find the queues on your system with qstat -q
+#If you have find your queue name replace long with the name and 
+#remove the space after # in the next line
+# PBS -q long
+#PBS -l nodes=1
+#PBS -j eo 
+ 
+
+cat $PE_HOSTFILE | awk '{print $1}' > machinefile
+cat machinefile
+export nb=`wc -w < machinefile`
+echo $nb
+
+mpdboot -n $nb -f machinefile -r rsh
+mpdtrace
+
+mpiexec -n $nb -wdir `pwd` ./mpi_pi
+
+mpdlistjobs > listjobs$$
+if [ ! -s listjobs$$ ]; then
+	mpdallexit
+	echo  --- all mpd-daemons stopped...
+	echo
+fi 
+rm listjobs$$ 2> /dev/null
+
+
+
+
+

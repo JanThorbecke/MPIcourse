@@ -1,0 +1,22 @@
+#!/bin/bash
+#Specifies the name of the file as it appears in PBS-queue
+#PBS -N MPI_PI
+#PBS -V
+#Specify in which queue the job will run (see also PBS webpages)
+#The execution time differs; small,medium,long,verylong
+#you can find the queues on your system with qstat -q
+#If you have find your queue name replace long with the name and 
+#remove the space after # in the next line
+# PBS -q long
+#PBS -l nodes=8
+#PBS -j eo 
+ 
+cd $PBS_O_WORKDIR
+export nb=`wc -w < $PBS_NODEFILE`
+echo $nb
+more $PBS_NODEFILE
+pwd
+
+mpirun -np $nb -machinefile $PBS_NODEFILE ./mpi_pi
+
+

@@ -1,0 +1,42 @@
+http://en.wikipedia.org/wiki/CPU_cache
+
+to check stack-size on current OS
+ulimit -a
+
+increase stack size
+ulimit -s 65530
+
+to check cache size on Apple OSX:
+system_profiler SPHardwareDataType
+sudo sysctl -a | grep cache
+
+compile the shared_cache example by typing:
+
+make clean
+make
+
+set the number of threads to use
+export OMP_NUM_THREADS=2
+
+and run the code
+
+./shared_cache
+
+Which loop is faster and why?
+
+In the code change the number after the static:
+
+        #pragma omp parallel for schedule(static,1)
+
+for example to
+
+        #pragma omp parallel for schedule(static,2)
+
+The OpenMP directive schedule(static,2) means that the loop is divided by OMP_NUM_THREADS(=2) and the loop iteration variable is giving each thread 2 iterations:
+
+thread 0: 0,1 4,5 8,9 ...
+thread 1: 2,3 6,7 10,11 ...
+
+
+The cache_trash exercise is not yet doing whats I would like to show and is not yet useful. The idea is to show that using multiple arrays the cache lines needed in the next iteration are thrown out by the cache lines from other arrays.
+

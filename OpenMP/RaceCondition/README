@@ -1,0 +1,23 @@
+http://en.wikipedia.org/wiki/CPU_cache
+
+compile the racecondition example by typing:
+
+make clean
+make
+
+set the number of threads to use
+
+export OMP_NUM_THREADS=4
+
+It does no matter if you only have 2 cores in your system, you can still run with as many threads as you like.
+
+and run the code
+
+./racecondition
+
+several times. Do you always get the same answer? Run with 
+
+export OMP_NUM_THREADS=1
+
+and look into the code to check what the correct values are.
+

@@ -1,0 +1,64 @@
+
+EXERCISE 1:   Matrix Multiply Using Autoparallelism
+***************************************************
+
+
+The file matmul.f contains a straightforward implementation of
+matrix multiply in which an outer loop will be parallelized
+by automatic parallelizers.
+
+Note that the driver routine has a loop which calls matmul several
+times. Currently, the repeat value is set to 30, which results
+in about 15 seconds single-CPU time on an modenr X86 system.
+
+
+1. Compile the code and run single-CPU. Use compiler option -O3.
+   Use the Unix "time" command to time the execution of the code.
+
+   ifort -O3 -qopt-report=4 matmul.f
+
+2. Compile the source for automatic parallellization and
+   check the compiler output. For automatic parallellization, you need 
+
+   ifort -O3 -parallel -diag-enable=par,openmp -qopt-report=4 matmul.f -o matmulp
+
+   You can inspect the matmul.optrpt to see what the compiler has done. 
+   Try to understand why the compiler has been doing this.
+
+Compile again with the -qno-opt-matmul flag added. You can check the ifort manual
+to see what that flag is doing:
+
+   ifort -O3 -parallel -diag-enable=par,openmp -qopt-report=4 -qno-opt-matmul matmul.f -o matmulp2
+
+3. Run the auto-parallized executables on 2, 3 and 4 CPUs. Use the
+   relevant environment variable to set the number of threads
+   to 2, 3 or 4. Of course, determine the wallclock time (time ./a.out).
+
+4. Use OpenMP directives to force the loop with label 30 to
+   be parallellized. Compile with 
+
+   ifort -O3 -qopt-report=4 -qopenmp matmul.f
+
+   for the compiler to interpret the OpenMP directives. 
+   Check the .optrpt file if the compiler indeed has
+   interpreted the OpenMP directives. 
+
+   Run on 1 CPU and determine the wallclock time.
+   Now, run on 2, 3 and 4 CPUS, and determine the wallclock times.
+
+   Try to understand what is going on.
+
+
+5. Change the source code by introducing a temporary scalar 
+   variable x, which is used instead of C(i,j) during the 
+   calculation in the loop with label 32. After the loop with
+   label 32, do not forget to assign the value of x to C(i,j)
+   Also exchange the loops with label 30 and 32
+ 
+   Compile and run again on 1, 2, 3 and 4 CPUs.
+
+   Compare the results with the previous results in part 4.
+
+6. As a last test try auto-parallelisation together with the solution of 5.
+
+   ifort -O3 -parallel -qopenmp -qopt-report=4 matmul.f -o matmulp

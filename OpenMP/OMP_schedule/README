@@ -1,0 +1,53 @@
+
+EXERCISE 3:   PARALLEL SECTIONS
+*******************************
+
+
+Silicon Graphics BV
+De Meern, The Netherlands.
+
+March 26, 1999.
+
+Apart from parallellizing do loops, there is another method of
+parallellizing chunks of code. This concept is known as parallel
+sections.
+
+
+1.  Take a look at the source code in file ex3.f. Determine 
+    whether it is possible to use the concept of parallel 
+    sections here.
+
+    Use OpenMP directives to define parallel sections. Compile
+    and execute on 1, 2, 3 and 4 processors.
+
+    ifort -O3 ex3.f -qopenmp -o ex3 
+    export OMP_NUM_THREADS=1
+    time ./ex3
+
+    What do you observe ? What is the explanation ?
+
+
+2.  Instead of using parallel sections, now parallellize the code
+    using the automatic parallellization flag of the compiler. Also,
+    use optimization flag -O3.
+
+    ifort -O3 ex3.f -parallel -qopt_report=4 -o ex3 
+
+    Check the output of the compiler and try to understand what 
+    transformations the compiler has made.
+
+    Execute the code on 1, 2, 3 and 4 processors, and determine
+    the wallclock times.
+
+    Try to find an explanation for the observed wallclock times
+    and speed-ups.
+
+
+3.  Use OpenMP directives to parallellize both the 20-loop and the
+    30-loop. Find a way to let the code run more efficiently, i.e.
+    try to improve the parallel efficiency.
+
+    ifort -O3 ex3.f -qopt_report=4 -qopenmp -o ex3 
+
+    (Hint: consider various scheduling policies within OpenMP.)
+

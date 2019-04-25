@@ -1,0 +1,155 @@
+Intel(R) Advisor can now assist with vectorization and show optimization
+  report messages with your source code.
+See "https://software.intel.com/en-us/intel-advisor-xe" for details.
+
+
+    Report from: Interprocedural optimizations [ipo]
+
+  WHOLE PROGRAM (SAFE) [EITHER METHOD]: false
+  WHOLE PROGRAM (SEEN) [TABLE METHOD]: true
+  WHOLE PROGRAM (READ) [OBJECT READER METHOD]: false
+
+INLINING OPTION VALUES:
+  -inline-factor: 100
+  -inline-min-size: 30
+  -inline-max-size: 230
+  -inline-max-total-size: 2000
+  -inline-max-per-routine: 10000
+  -inline-max-per-compile: 500000
+
+In the inlining report below:
+   "sz" refers to the "size" of the routine. The smaller a routine's size,
+      the more likely it is to be inlined.
+   "isz" refers to the "inlined size" of the routine. This is the amount
+      the calling routine will grow if the called routine is inlined into it.
+      The compiler generally limits the amount a routine can grow by having
+      routines inlined into it.
+
+Begin optimization report for: EX3
+
+    Report from: Interprocedural optimizations [ipo]
+
+INLINE REPORT: (EX3) [1/1=100.0%] ex3.f(1,15)
+  -> EXTERN: (1,15) for_set_reentrancy
+  -> EXTERN: (38,7) for_write_seq_lis_xmit
+  -> EXTERN: (38,7) for_write_seq_lis_xmit
+  -> EXTERN: (38,7) for_write_seq_lis
+
+
+    Report from: Loop nest, Vector & Auto-parallelization optimizations [loop, vec, par]
+
+
+LOOP BEGIN at ex3.f(6,10)
+   remark #17109: LOOP WAS AUTO-PARALLELIZED
+   remark #17101: parallel loop shared={ } private={ } firstprivate={ j i } lastprivate={ } firstlastprivate={ } reduction={ }
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+   remark #25015: Estimate of max trip count of loop=1200
+
+   LOOP BEGIN at ex3.f(7,13)
+      remark #15388: vectorization support: reference a has aligned access   [ ex3.f(8,16) ]
+      remark #15388: vectorization support: reference b has aligned access   [ ex3.f(9,4) ]
+      remark #15388: vectorization support: reference c has aligned access   [ ex3.f(10,4) ]
+      remark #15305: vectorization support: vector length 4
+      remark #15309: vectorization support: normalized vectorization overhead 0.058
+      remark #15300: LOOP WAS VECTORIZED
+      remark #15449: unmasked aligned unit stride stores: 3 
+      remark #15475: --- begin vector loop cost summary ---
+      remark #15476: scalar loop cost: 34 
+      remark #15477: vector loop cost: 21.500 
+      remark #15478: estimated potential speedup: 1.580 
+      remark #15482: vectorized math library calls: 1 
+      remark #15487: type converts: 1 
+      remark #15488: --- end vector loop cost summary ---
+      remark #25015: Estimate of max trip count of loop=300
+   LOOP END
+LOOP END
+
+LOOP BEGIN at ex3.f(14,10)
+   remark #25045: Fused Loops: ( 14 26 )
+
+   remark #17100: FUSED LOOP WAS AUTO-PARALLELIZED
+   remark #17101: parallel loop shared={ } private={ } firstprivate={ j k j k i i } lastprivate={ } firstlastprivate={ } reduction={ }
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+   remark #25015: Estimate of max trip count of loop=1198
+
+   LOOP BEGIN at ex3.f(15,13)
+      remark #25045: Fused Loops: ( 15 27 )
+
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+      remark #25015: Estimate of max trip count of loop=1200
+
+      LOOP BEGIN at ex3.f(16,16)
+         remark #25045: Fused Loops: ( 16 28 )
+
+         remark #15305: vectorization support: vector length 4
+         remark #15309: vectorization support: normalized vectorization overhead 0.120
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15475: --- begin vector loop cost summary ---
+         remark #15476: scalar loop cost: 491 
+         remark #15477: vector loop cost: 149.500 
+         remark #15478: estimated potential speedup: 3.280 
+         remark #15487: type converts: 16 
+         remark #15488: --- end vector loop cost summary ---
+         remark #25015: Estimate of max trip count of loop=1250
+      LOOP END
+
+      LOOP BEGIN at ex3.f(28,16)
+      LOOP END
+   LOOP END
+
+   LOOP BEGIN at ex3.f(27,13)
+   LOOP END
+LOOP END
+
+LOOP BEGIN at ex3.f(26,10)
+LOOP END
+
+LOOP BEGIN at ex3.f(6,10)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+   remark #25015: Estimate of max trip count of loop=1200
+
+   LOOP BEGIN at ex3.f(7,13)
+      remark #17107: loop was not parallelized: inner loop
+      remark #15388: vectorization support: reference a has aligned access   [ ex3.f(8,16) ]
+      remark #15388: vectorization support: reference b has aligned access   [ ex3.f(9,4) ]
+      remark #15388: vectorization support: reference c has aligned access   [ ex3.f(10,4) ]
+      remark #15305: vectorization support: vector length 4
+      remark #15309: vectorization support: normalized vectorization overhead 0.058
+      remark #15300: LOOP WAS VECTORIZED
+      remark #15449: unmasked aligned unit stride stores: 3 
+      remark #15475: --- begin vector loop cost summary ---
+      remark #15476: scalar loop cost: 34 
+      remark #15477: vector loop cost: 21.500 
+      remark #15478: estimated potential speedup: 1.580 
+      remark #15482: vectorized math library calls: 1 
+      remark #15487: type converts: 1 
+      remark #15488: --- end vector loop cost summary ---
+      remark #25015: Estimate of max trip count of loop=300
+   LOOP END
+LOOP END
+
+LOOP BEGIN at ex3.f(14,10)
+   remark #15542: loop was not vectorized: inner loop was already vectorized
+   remark #25015: Estimate of max trip count of loop=1198
+
+   LOOP BEGIN at ex3.f(15,13)
+      remark #17107: loop was not parallelized: inner loop
+      remark #15542: loop was not vectorized: inner loop was already vectorized
+      remark #25015: Estimate of max trip count of loop=1200
+
+      LOOP BEGIN at ex3.f(16,16)
+         remark #17107: loop was not parallelized: inner loop
+         remark #15305: vectorization support: vector length 4
+         remark #15309: vectorization support: normalized vectorization overhead 0.120
+         remark #15300: LOOP WAS VECTORIZED
+         remark #15475: --- begin vector loop cost summary ---
+         remark #15476: scalar loop cost: 491 
+         remark #15477: vector loop cost: 149.500 
+         remark #15478: estimated potential speedup: 3.280 
+         remark #15487: type converts: 16 
+         remark #15488: --- end vector loop cost summary ---
+         remark #25015: Estimate of max trip count of loop=1250
+      LOOP END
+   LOOP END
+LOOP END
+===========================================================================

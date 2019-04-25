@@ -1,0 +1,75 @@
+MPI Routine Statistics (FPMPI2 Version 2.1f)
+Explanation of data:
+Times are the time to perform the operation, e.g., the time for MPI_Send
+Average times are the average over all processes, e.g., sum (time on each
+process) / number of processes
+Min and max values are over all processes
+(Data is always average/min/max)
+Amount of data is computed in bytes.  For point-to-point operations,
+it is the data sent or received.  For collective operations, it is the
+data contibuted to the operation.  E.g., for an MPI_Bcast, the amount of
+data is the number of bytes provided by the root, counted only at the root.
+For synchronizing collective operations, the average, min, and max time
+spent synchronizing is shown next.
+Calls by message size shows the fraction of calls that sent messages of a 
+particular size.  The bins are
+0 bytes, 1-4 bytes, 5-8 bytes, 9-16, 17-32, 33-64, -128, -256, -512, -1024
+ -4K, -8K, -16K, -32K, -64K, -128K, -256K, -512K, -1M, -4M, -8M, -16M, 
+ -32M, -64M, -128M, -256M, -512M, -1GB, >1GB.
+Each bin is represented by a single digit, representing the 10's of percent
+of messages within this bin.  A 0 represents precisely 0, a . (period) 
+represents more than 0 but less than 10%.  A * represents 100%.
+Messages by message size shows similar information, but for the total
+message size.
+
+The experimental topology information shows the 1-norm distance that the
+longest point-to-point message travelled, by process.
+
+MPI_Pcontrol may be used to control the collection of data.  Use the values
+defined in fpmpi.h, such as FPMPI_PROF_COLLSYNC, to control what data is 
+collected or reported by FPMPI2.
+Command: ./mpi_pi
+
+Date:     	Tue May 19 15:24:28 2009
+Processes:	4
+Execute time:	3.402
+Timing Stats: [seconds]	[min/max]    	[min rank/max rank]
+  wall-clock: 3.402 sec	2.770000 / 4.850000	3 / 0
+
+Memory Usage Stats (RSS) [min/max KB]:	253/281
+
+                  Average of sums over all processes
+Routine                 Calls       Time Msg Length    %Time by message length
+                                                    0.........1........1........
+                                                              K        M
+MPI_Bcast           :       1     0.0006          1 0*00000000000000000000000000
+MPI_Reduce          :       1   4.16e-05          8 00*0000000000000000000000000
+
+Details for each MPI routine
+                  Average of sums over all processes
+                                                   % by message length
+                                (max over          0.........1........1........
+                                 processes [rank])           K        M
+MPI_Bcast:
+	Calls     :          1            1 [   0] 0*00000000000000000000000000
+	Time      :     0.0006      0.00084 [   1] 0*00000000000000000000000000
+	Data Sent :          1            4 [   0]
+	By bin    : 1-4	[1,1]	[   3.5e-05,   0.00084]
+MPI_Reduce:
+	Calls     :          1            1 [   0] 00*0000000000000000000000000
+	Time      :   4.16e-05     5.41e-05 [   2] 00*0000000000000000000000000
+	Data Sent :          8            8 [   0]
+	By bin    : 5-8	[1,1]	[  3.41e-05,  5.41e-05]
+
+Summary of target processes for point-to-point communication:
+1-norm distance of point-to-point with an assumed 2-d topology
+(Maximum distance for point-to-point communication from each process)
+  0  0
+  0  0
+
+Detailed partner data: source: dest1 dest2 ...
+Size of COMM_WORLD	4
+0:
+1:
+2:
+3:
