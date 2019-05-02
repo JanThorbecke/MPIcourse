@@ -2,7 +2,7 @@
 #SBATCH -J Name-of-job
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=2
-#SBATCH --nodes=2
+#SBATCH --nodes=1
 #SBATCH -o snap46-%A.out
 #SBATCH --time=1:00:00
 
