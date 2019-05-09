@@ -5,7 +5,7 @@ int main(int argc, char *argv[]){
     double *array; 
     double sum; 
     N=100; 
-    array=(double *)malloc(sizeof(double)*N); 
+    array=(double *)calloc(sizeof(double),N); 
     for(i=0;i<N;i++){ 
         array[i]=1.0; 
     } 

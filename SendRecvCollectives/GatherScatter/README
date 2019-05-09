@@ -2,8 +2,6 @@ Expand on collective communication routines by going over two very important rou
 
 ## An introduction to MPI_Scatter
 `MPI_Scatter` is a collective routine that is very similar to `MPI_Bcast` .  `MPI_Scatter` involves a designated root process sending data to all processes in a communicator. The primary difference between `MPI_Bcast` and `MPI_Scatter` is small but important. `MPI_Bcast` sends the *same* piece of data to all processes while `MPI_Scatter` sends *chunks of an array* to different processes. 
-
-
 `MPI_Bcast` takes a single data element at the root process (the red box) and copies it to all other processes. `MPI_Scatter` takes an array of elements and distributes the elements in the order of process rank. The first element (in red) goes to process zero, the second element (in green) goes to process one, and so on. Although the root process (process zero) contains the entire array of data, `MPI_Scatter` will copy the appropriate element into the receiving buffer of the process. Here is what the function prototype of `MPI_Scatter` looks like.
 
 MPI_Scatter(

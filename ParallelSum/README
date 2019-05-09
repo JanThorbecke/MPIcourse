@@ -18,6 +18,7 @@ The following MPI code fragments are needed in sum.c to make it parallel with MP
 
     MPI_Finalize();
 
+It is not (yet) necessary to allocate the arrays at the correct size, just make sure that they are large enough.
 To compile the code type:
 
 make sum

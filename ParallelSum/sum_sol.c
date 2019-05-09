@@ -13,13 +13,13 @@ int main(int argc, char *argv[]){
     N=100;
 
     if(rank==0){
-        array=(double *)malloc(sizeof(double)*N);
+        array=(double *)calloc(sizeof(double),N);
         for(i=0;i<N;i++) array[i]=1.0;
         MPI_Send(array+N/2,N/2,MPI_DOUBLE,1,10,MPI_COMM_WORLD);
     }
     
     else{
-        array=(double *)malloc(sizeof(double)*N);
+        array=(double *)calloc(sizeof(double),N);
         MPI_Recv(array,N/2,MPI_DOUBLE,0,10,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
     }
 
