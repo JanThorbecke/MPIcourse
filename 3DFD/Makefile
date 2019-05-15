@@ -4,7 +4,7 @@
 #module load cudatoolkit/7.0.28
 #module load perftools
 
-CC=mpicc
+CC=cc
 CFLAGS=-O3 
 LIBS=-L. -lgenfft -lm -lc
 
