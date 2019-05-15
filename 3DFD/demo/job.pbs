@@ -6,12 +6,7 @@
 #PBS -V
 #PBS -l walltime=01:30:00
 
-#export MPICH_ABORT_ON_ERROR=1
-#ulimit -c unlimited
-ulimit -s unlimited
-
 cd $PBS_WORK_DIR
-cd /home/users/jan/lus/test/3dfd
 
 npes=1024
 
@@ -22,9 +17,7 @@ export MPICH_MPIIO_HINTS_DISPLAY=1
 #export MPICH_MPIIO_CB_ALIGN=-1
 export MPICH_MPIIO_HINTS='snap*:cb_nodes=4:striping_factor=4'
 
-rm snap*
-
-aprun -n $npes -cc cpu 3dfd
+aprun -n $npes -cc cpu 3dfd verbose=1
 
 endtime=`date +%s%N`
 

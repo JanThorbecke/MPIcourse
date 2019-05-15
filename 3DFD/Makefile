@@ -4,31 +4,17 @@
 #module load cudatoolkit/7.0.28
 #module load perftools
 
-CC=cc
+CC=mpiicc
 CFLAGS=-O3 
-LIBS=-L. -lgenfft -lm -lc
+LIBS= -lm -lc
 
-all: libgenfft 3dfd
+all: 3dfd
 
-PRG = 3dfd
-
-SRCC	= $(PRG).c \
-	getParameters.c \
-	getModelInfo.c  \
-	getWaveletInfo.c  \
-	getWaveletHeaders.c  \
-	readModel.c  \
-	wallclock_time.c  \
-	verbosepkg.c  \
-	name_ext.c  \
+SRCC	= 3dfd.c \
+	getpars.c \
 	atopkge.c \
 	docpkge.c \
-	getpars.c
-
-
-
-libgenfft:
-	cd FFTlib		; $(MAKE)
+	wallclock_time.c
 
 OBJC	= $(SRCC:%.c=%.o)
 
@@ -38,17 +24,17 @@ OBJC	= $(SRCC:%.c=%.o)
 	$(CC) $(CFLAGS) -I. -c $<
 
 
-$(PRG):	$(OBJC) fdelmodc.h
-	$(CC) $(LDFLAGS) $(CFLAGS) $(OPTC) -o $(PRG) $(OBJC) $(LIBS)
+3dfd:	$(OBJC) 
+	$(CC) $(LDFLAGS) $(CFLAGS) $(OPTC) -o $@ $(OBJC) $(LIBS)
 
 install: $(PRG) 
 	cp $(PRG) $B
 
 clean:
-		rm -f core $(OBJC) $(OBJM) $(PRG) 
+		rm -f core $(OBJC) 
 
 realclean:
-		rm -f core $(OBJC) $(OBJM) $(PRG) $B/$(PRG) 
+		rm -f core $(OBJC) $(PRG) 
 
 
 print:	Makefile $(SRC)

@@ -62,8 +62,8 @@ MPI_Status  recv_status;
     MPI_Cart_coords(new_comm, my_rank, MAXDIMS, coords); 
 
     /* Get nearest neighbour ranks. */
-    MPI_Cart_shift(new_comm, 0, 1, &left, &right);
-    MPI_Cart_shift(new_comm, 1, 1, &top, &bottom);
+    MPI_Cart_shift(new_comm, 0, -1, &left, &right);
+    MPI_Cart_shift(new_comm, 1, -1, &top, &bottom);
  
     /* Compute global sum. */
     sum = 0;

@@ -6,12 +6,10 @@
 #include<assert.h>
 #include<sys/time.h>
 #include"par.h"
-#include"fdelmodc.h"
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define NINT(x) ((int)((x)>0.0?(x)+0.5:(x)-0.5))
-
 
 #define STRIPE_COUNT "4" /* must be an ascii string */
 #define STRIPE_SIZE "1048576" /* 1 MB must be an ascii string */
@@ -29,7 +27,6 @@
 				      (vy[(iy+2)*nxz+ix*nz+iz] - vy[(iy-1)*nxz+ix*nz+iz]) + \
 				      (vz[iy*nxz+ix*nz+iz+2]   - vz[iy*nxz+ix*nz+iz-1]))
 
-void vinit();
 int updateVelocitiesHalo(float *vx, float *vy, float *vz, float *p, float *ro, int halo, int npx, int npy, int npz);
 int updateVelocities(float *vx, float *vy, float *vz, float *p, float *ro, int halo, int npx, int npy, int npz);
 int updatePressureHalo(float *vx, float *vy, float *vz, float *p, float *l2m, int halo, int npx, int npy, int npz);
@@ -42,58 +39,20 @@ int copyHaloP(float *p, int npx, int npy, int npz, int halo, float *leftSend, fl
 int waitForHalo(MPI_Request *reqRecv, MPI_Request *reqSend);
 float gauss2time(float t, float f, float t0);
 double wallclock_time(void);
-int getParameters(modPar *mod, recPar *rec, snaPar *sna, wavPar *wav, srcPar *src, shotPar *shot, bndPar *bnd, int verbose);
 
 /* Self documentation */
 char *sdoc[] = {
 " ",
-" fdelmodc - elastic acoustic finite difference wavefield modeling ",
+" fdelmodc - basic acoustic finite difference 3D wavefield modeling ",
 " ",
-" IO PARAMETERS:",
-"   file_cp= .......... P (cp) velocity file",
-"   file_cs= .......... S (cs) velocity file",
-"   file_den= ......... density (ro) file",
-"   file_src= ......... file with source signature",
-"   file_rcv=recv.su .. base name for receiver files",
-"   file_snap=snap.su . base name for snapshot files",
-"   file_beam=beam.su . base name for beam fields ",
-"   rcv_txt=........... text file with receiver coordinates. Col 1: x, Col. 2: z",
-"   dx= ............... read from model file: if dx==0 then dx= can be used to set it",
-"   dz= ............... read from model file: if dz==0 then dz= can be used to set it",
-"   dt= ............... read from file_src: if dt==0 then dt= can be used to set it",
-"" ,
-" OPTIONAL PARAMETERS:",
-"   ischeme=3 ......... 1=acoustic, 2=visco-acoustic 3=elastic, 4=visco-elastic",
-"   tmod=(nt-1)*dt .... total registration time (nt from file_src)",
-"   ntaper=0 .......... length of taper at edges of model",
-"   tapfact=0.30 ...... taper strength: larger value gets stronger taper",
-"   For the 4 boundaries the options are:  1=free 2=pml 3=rigid 4=taper",
-"   top=1 ............. type of boundary on top edge of model",
-"   left=4 ............ type of boundary on left edge of model",
-"   right=4 ........... type of boundary on right edge of model",
-"   bottom=4 .......... type of boundary on bottom edge of model",
-//"   tapleft=0 ......... =1: taper left edge of model",
-//"   tapright=0 ........ =1: taper right edge of model",
-//"   taptop=0 .......... =1: taper top edge of model",
-//"   tapbottom=0 ....... =1: taper bottom edge of model",
-//"   cfree=0 ........... 1=free surface",
-"   grid_dir=0 ........ direction of time modeling (1=reverse time)",
-"   Qp=15 ............. global Q-value for P-waves in visco-elastic (ischeme=2,4)",
-"   file_qp= .......... model file Qp values as function of depth",
-"   Qs=Qp ............. global Q-value for S-waves in visco-elastic (ischeme=4)",
-"   file_qs= .......... model file Qs values as function of depth",
-"   fw=0.5*fmax ....... central frequency for which the Q's are used",
-"   sinkdepth=0 ....... receiver grid points below topography (defined bij cp=0.0)",
-"   sinkdepth_src=0 ... source grid points below topography (defined bij cp=0.0)",
-"   sinkvel=0 ......... use velocity of first receiver to sink through to next layer",
-"   beam=0 ............ calculate energy beam of wavefield in model",
-"   disable_check=0 ... disable stabilty and dispersion check and continue modeling",
+"   nx=256 ............ number of grid-points in x-direction",
+"   ny=nx ............. number of grid-points in y-direction",
+"   nz=nx ............. number of grid-points in z-direction",
+"   nt=2048 ........... number of time-steps",
+"   itsnap=100 ........ write snapshot each itsnap time-step",
 "   verbose=0 ......... silent mode; =1: display info",
 " ",
-" SHOT AND GENERAL SOURCE DEFINITION:",
-"   src_type=1 ........ 1=P 2=Txz 3=Tzz 4=Txx 5=S-pot 6=Fx 7=Fz 8=P-pot 9=P+(Fx and/or Fz)",
-"",
-"      Jan Thorbecke 2015",
+"      Jan Thorbecke 2019",
 "      Cray / TU Delft",
 "      E-mail: janth@xs4all.nl ",
 "",
@@ -101,16 +60,9 @@ NULL};
 
 int main (int argc, char *argv[])
 {
-	modPar mod;
-	recPar rec;
-	snaPar sna;
-	wavPar wav;
-	srcPar src;
-	bndPar bnd;
-	shotPar shot;
 	float *wavelet;
 	int nx, ny, nz, dims[3], period[3], reorder, coord[3], ndims=3;
-	int npx, npy, npz, halo, nt;
+	int npx, npy, npz, halo, nt, itsnap;
 	int my_rank, size, source, dest, snapwritten;
 	int left, right, front, back, top, bottom;
 	int direction, displ, halosizex, halosizey, halosizez;
@@ -124,8 +76,8 @@ int main (int argc, char *argv[])
 	float *leftRecv, *leftSend, *rightRecv, *rightSend;
 	float *frontRecv, *frontSend, *backRecv, *backSend;
 	float *topRecv, *topSend, *bottomRecv, *bottomSend;
-	float dt, src_ampl, fmax, fpeaksrc, t0src, time, snaptime;
-	double t00, t0, t1, t2, tcomm, tcomp, thcomp, tcopy, ttot, tio;
+	float dt, src_ampl, fmax, fpeaksrc, t0src, time;
+	double t00, t0, t1, t2, t3a, t3b, tt, tcomm, tcomp, thcomp, tcopy, ttot, tio;
 	char err_buffer[MPI_MAX_ERROR_STRING];
 	int resultlen;
 	MPI_Comm COMM_CART;
@@ -140,14 +92,13 @@ int main (int argc, char *argv[])
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	vinit();
 
 	t0= wallclock_time();
 	initargs(argc,argv);
 	requestdoc(0);
 
 	if (!getparint("verbose",&verbose)) verbose=0;
-	getParameters(&mod, &rec, &sna, &wav, &src, &shot, &bnd, verbose);
+	if (!getparint("itsnap",&itsnap)) itsnap=100;
 
 	/* divide 3D cube among available processors */
 	dims[0]=0; 
@@ -157,12 +108,11 @@ int main (int argc, char *argv[])
 
 	/* dims contains the number of MPI-tasks in each direction */
 	/* set number of grid points based on number of procs in dims */
-	nx=2048; ny=2048; nz=1024;
-	nx=1024; ny=1024; nz=512;
-	nx=256; ny=256; nz=256;
+	if (!getparint("nx",&nx)) nx=256;
+	if (!getparint("ny",&ny)) ny=nx;
+	if (!getparint("nz",&nz)) nz=nx;
+	if (!getparint("nt",&nt)) nt=2048;
 
-	nx=mod.nx; ny=mod.ny; nz=mod.nz;
-	dx=mod.dx; dy=mod.dy; dz=mod.dz;
 	dx=5; dy=5; dz=5;
 
 	halo = 2;
@@ -170,9 +120,7 @@ int main (int argc, char *argv[])
 	nx=dims[1]*(nx/dims[1]); 
 	ny=dims[2]*(ny/dims[2]); 
 
-//	dt=0.001;
-	nt=4096;
-	t0src=0.50;
+	t0src=0.10;
 	hcp=2000.0;
 	hro=1800.0;
 	tcomm=tcomp=thcomp=tcopy=tio=0.0;
@@ -182,17 +130,14 @@ int main (int argc, char *argv[])
 	fpeaksrc=0.2*fmax; /* Ricker wavelet has peak at 1/3 of fmax */
 	fac = dt/dx;
 
-
 	fx=-dx*nx/2; fy=-dy*ny/2; fz=0;
 	npz = 2*halo+nz/dims[0];
 	npx = 2*halo+nx/dims[1];
 	npy = 2*halo+ny/dims[2];
 	wavelet = (float *)calloc(nt,sizeof(float));
 
-	snaptime = t0src+1.80*npx*dx*0.5/hcp;
 	snapwritten=0;
-	nt = (int) 1.1*(t0src+snaptime)/dt;
-	nt = (int) (t0src+1.5)/dt;
+	//nt = (int) (t0src+1.5)/dt;
 
 	if (verbose && my_rank==0) {
 		fprintf(stderr,"fmax=%f fpeak=%f dt=%e\n", fmax, fpeaksrc, dt);
@@ -202,7 +147,7 @@ int main (int argc, char *argv[])
 		fflush(stderr);
 	}
 
-	if (my_rank==0) fprintf(stderr,"memory per MPI task is %ld MB\n", (6*npx*npy*npz*4/(1024*1024)));
+	if (verbose && my_rank==0) fprintf(stderr,"memory per MPI task is %ld MB\n", (6*npx*npy*npz*4/(1024*1024)));
 	/* allocate wavefields and medium properties for local grid domains */
 	p   = (float *)calloc(npx*npy*npz,sizeof(float));
 	vx  = (float *)calloc(npx*npy*npz,sizeof(float));
@@ -259,7 +204,7 @@ int main (int argc, char *argv[])
 	topSend    = (float *)calloc(3*halosizez,sizeof(float));
 	bottomSend = (float *)calloc(3*halosizez,sizeof(float));
 
-	if (my_rank==0) fprintf(stderr,"memory per MPI task for halo exchange is %ld MB\n", ((12*(halosizex+halosizey+halosizez))*4/(1024*1024)));
+	if (verbose && my_rank==0) fprintf(stderr,"memory per MPI task for halo exchange is %ld MB\n", ((12*(halosizex+halosizey+halosizez))*4/(1024*1024)));
 
 	/* create subarrays(excluding halo areas) to write to file with MPI-IO */
 	/* data in the local array */
@@ -432,15 +377,15 @@ int main (int argc, char *argv[])
 		t1 = wallclock_time();
 		tcopy += t1-t2;
 	
-		fprintf(stderr,"rank %d did time step %d in %f seconds\n", my_rank, it, t1-t0);
+		if (verbose>=3 && my_rank==0) fprintf(stderr,"rank %d did time step %d in %f seconds\n", my_rank, it, t1-t0);
 		fflush(stderr);
 
 		/* write snapshots to file */
-//		if (time >= snaptime && !snapwritten) {
-		if ((it+1)%100==0 ) {
+		if ((it)%itsnap==0 && it!=0) {
 
 			t1 = wallclock_time();
 			sprintf(filename,"snap_nz%d_nx%d_ny%d_it%04d.bin",nz, nx, ny, it);
+			if (verbose>=2 && my_rank==0) fprintf(stderr,"Writing at time-step %d to file %s \n", it, filename);
 
 			MPI_Info_create(&fileinfo);
 			MPI_Info_set(fileinfo, "striping_factor", STRIPE_COUNT);
@@ -478,17 +423,27 @@ int main (int argc, char *argv[])
 			tio += t2-t1;
 		}
 
+        if (verbose && my_rank==0) {
+            if (it==0) t3a=wallclock_time();
+            if (it==200) {
+                t3b=wallclock_time();
+                tt=(t3b-t3a)*(nt/200.0);
+                fprintf(stderr,"Estimated compute time = %.2f s.\n",tt);
+            }
+        }
+
+
 	}
 	ttot = wallclock_time() - t00;
 
-	if (my_rank == 0) {
+	if (verbose && my_rank == 0) {
 		fprintf(stderr,"rank %d total time in %f seconds\n", my_rank, ttot);
 		fprintf(stderr,"rank %d comm  time in %f seconds\n", my_rank, tcomm);
 		fprintf(stderr,"rank %d comp  time in %f seconds\n", my_rank, tcomp);
 		fprintf(stderr,"rank %d hcomp time in %f seconds\n", my_rank, thcomp);
 		fprintf(stderr,"rank %d copy  time in %f seconds\n", my_rank, tcopy);
 		fprintf(stderr,"rank %d io    time in %f seconds\n", my_rank, tio);
-		fprintf(stderr,"rank %d snaphsots written to file\n", my_rank, snapwritten);
+		fprintf(stderr,"rank %d snaphsots written to file %d\n", my_rank, snapwritten);
 	}
 
 
