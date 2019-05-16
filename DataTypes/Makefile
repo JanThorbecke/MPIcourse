@@ -26,7 +26,7 @@ userdefined_types3: userdefined_types3.f90
 	$(MPIF90) $(CFLAGS) -c $<
 
 clean:
-	rm -f core *.o userdefined_types1 userdefined_types2 userdefined_types3
+	rm -f core *.o userdefined_types1 userdefined_types2 userdefined_types3 a.out
 
 print:	Makefile $(SRC)
 	$(PRINT) $?
