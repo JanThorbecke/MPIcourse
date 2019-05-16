@@ -3,7 +3,7 @@
 #include <mpi.h>
 
 #define root 0
-#define n 5120
+#define n 512
 
 int main(int argc, char *argv[]){
   float *A, *Aloc;
@@ -19,30 +19,29 @@ int main(int argc, char *argv[]){
   y=(float *)malloc(ndim*sizeof(float));
   yloc=(float *)malloc(n*sizeof(float));
   Aloc= (float *)malloc(n*ndim*sizeof(float));
-  A= (float *)malloc(ndim*ndim*sizeof(float));
   if (my_id == root) {
+    A= (float *)malloc(ndim*ndim*sizeof(float));
     for (i=0; i<ndim; i++){
       for (j=0; j<ndim; ++j)
         A[i*ndim+j] = (float)drand48();
-        x[i] = (float)drand48();
     }
+    x[i] = (float)drand48();
   } 
 
 /*  Transfer the blocks of rows as well as the whole x to  */
 /*  tasks */
 
-  MPI_Scatter(A, n*ndim, MPI_FLOAT, Aloc, n*ndim, 
-	      MPI_FLOAT, 0,MPI_COMM_WORLD);
+  MPI_Scatter(A, n*ndim, MPI_FLOAT, Aloc, n*ndim, MPI_FLOAT, 0,MPI_COMM_WORLD);
   MPI_Bcast(x, ndim, MPI_FLOAT, root, MPI_COMM_WORLD);
 
 #pragma omp parallel private(i,j) shared(x,Aloc,ndim) 
   for (i=0; i<n; ++i){
-	asum = 0.0;
+    asum = 0.0;
 #pragma omp for reduction(+:asum) 
     for (j=0; j<ndim; ++j) {
       asum = asum + Aloc[i*ndim+j]*x[j];
     }
-	yloc[i] = asum;
+    yloc[i] = asum;
   }
 
 /*  Combine the full y and make it available to all tasks */
@@ -51,8 +50,11 @@ int main(int argc, char *argv[]){
 
 //  if (my_id == root) for (i=0; i<ndim; ++i) printf("%f ", y[i]);
   
-  free(A); 
+  if (my_id == root) free(A); 
   free(Aloc); 
+  free(yloc); 
+  free(y); 
+  free(x); 
     
   MPI_Finalize();
 

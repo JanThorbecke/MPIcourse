@@ -1,0 +1,23 @@
+#!/bin/bash 
+#PBS -N outjacobi
+#PBS -j oe
+#PBS -l place=scatter,select=1
+#PBS -S /bin/bash
+#PBS -V
+#PBS -q sk40-sm
+#PBS -l walltime=00:10:00
+
+set -x
+cd $PBS_O_WORKDIR
+pwd
+
+starttime=`date +%s%N`
+
+aprun -n 16 ./a.out
+
+endtime=`date +%s%N`
+
+runtime=$(echo "scale=9; 1.0*10^(-9)*(${endtime}-${starttime})" | bc -l)
+echo "Runtime = $runtime seconds" 
+
+

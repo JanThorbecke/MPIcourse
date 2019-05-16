@@ -1,0 +1,26 @@
+#!/bin/bash 
+#PBS -N outmatvec
+#PBS -j oe
+#PBS -l place=scatter,select=10
+#PBS -S /bin/bash
+#PBS -V
+#PBS -q sk40-lg
+#PBS -l walltime=00:10:00
+
+set -x
+cd $PBS_O_WORKDIR
+ulimit -s unlimited
+
+starttime=`date +%s%N`
+
+export OMP_NUM_THREADS=1
+time aprun -d $OMP_NUM_THREADS -n 10 -N1 ./a.out 
+
+export OMP_NUM_THREADS=4
+time aprun -d $OMP_NUM_THREADS -n 10 -N1 ./a.out 
+
+endtime=`date +%s%N`
+runtime=$(echo "scale=9; 1.0*10^(-9)*(${endtime}-${starttime})" | bc -l)
+echo "Runtime = $runtime seconds" 
+
+
