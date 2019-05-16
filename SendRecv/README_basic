@@ -29,3 +29,14 @@ make c
 
 Fortran code:
 make f90
+
+SENDRECV
+To exchange data with another rank there is MPI_Sendrecv.
+
+To compile and see the results of the sendrecv.c code you can do:
+
+mpiicc sendrecv.c -o sendrecv
+
+mpirun -np 8 ./sendrecv
+
+
