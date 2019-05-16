@@ -29,7 +29,7 @@ int array_of_starts[1], order;
 MPI_File fh;
 MPI_Datatype etype;
 MPI_Datatype filetype;
-____ disp;
+MPI_Offset disp;
 MPI_Status status;
 
 char buf; 
