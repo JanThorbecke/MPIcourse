@@ -22,7 +22,8 @@ Pick any of the exercices you like to do. They are ordered in increasing complex
 -4a- mpiio_2D_w.c: MPI_File_write_all
   + without running the program draw a 2D figure that contains the output of the program, by inspecting the source code.
   + compile (mpicc mpiio_2D_w.c -lm) and run the program and check your drawing
-  + you can check the file with: od -i test.dat -w128
+  + Use number of MPI-tasks N, such that sqrt(N) = integer
+  + You can check the file with: od -i test.dat -w128
 
 -4b- Collective MPI-IO examples
    + mpiio1_w.c: MPI_File_write_at_all
