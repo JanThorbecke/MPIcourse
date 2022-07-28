@@ -36,6 +36,7 @@ int main(int argc,char *argv[])
             printf("%d received %d numbers\n",myid,count);
         }     
     }
+    fprintf(stderr, "MPI rank %d is ready with Send/Recv\n",myid);
     free(outbuf);
     free(inbuf);
     MPI_Finalize();

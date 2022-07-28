@@ -28,9 +28,13 @@ Run the code so that the processes are on different nodes
 You can submit 'internode.slurm' to the queue by 'sbatch internode.slurm'
 mpirun -n 2  ./a.out > inter_node.dat
 
-Start up gnuplot
++ Start up gnuplot
+module load gnuplot
+gnuplot plot.gnp
+
+or use interactive gnuplot
 gnuplot
-Plot the bandwidth as a function of the message size in bytes
+#Plot the bandwidth as a function of the message size in bytes
 plot 'intra_node.dat' u 2:8 w l, 'inter_node.dat' u 2:8 w l
 
 a) Why is the bandwidth smaller for small messages?

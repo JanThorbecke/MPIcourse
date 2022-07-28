@@ -9,12 +9,12 @@ set xlabel "communication size in Bytes"
 set ylabel "Bandwidth Bytes/s"
 set grid
 #set logscale x 2
-set output 'PingPongBandwidthSwan.pdf'
-plot "intra_node_swan.dat" using 2:8 title "intra-node" lw 2, \
-	"inter_node_swan.dat" using 2:8 title "inter-node"
+set output 'PingPongBandwidth.pdf'
+plot "intra_node.dat" using 2:8 title "intra-node" lw 2, \
+	"inter_node.dat" using 2:8 title "inter-node"
 
 set ylabel "Time s"
 set logscale y 2
-set output 'PingPongTimeSwan.pdf'
-plot "intra_node_swan.dat" using 2:5 title "intra-node" lw 2, \
-	"inter_node_swan.dat" using 2:5 title "inter-node"
+set output 'PingPongTime.pdf'
+plot "intra_node.dat" using 2:5 title "intra-node" lw 2, \
+	"inter_node.dat" using 2:5 title "inter-node"

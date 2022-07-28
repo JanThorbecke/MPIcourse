@@ -14,6 +14,8 @@ scancel JOBID
 
 a) Why does the program get stuck?
 b) Reorder the sends and receives in such a way that there is no deadlock.
+   The answer can be found in deadlock_sol_b.c
+
 c) Replace the standard sends with non-blocking sends to avoid deadlocking.
 The calls are:
 
@@ -23,6 +25,7 @@ The calls are:
                 MPI_Get_count(&(status[0]),MPI_DOUBLE,&count);
 
 and replace the 'x' in each process; the above commands are implemented for each process.
+   The answer can be found in deadlock_sol_c.c
 
 d) Replace the sends and receives with MPI_SENDRECV.
 The calls are:
@@ -32,6 +35,7 @@ The calls are:
           MPI_Get_count(&status,MPI_DOUBLE,&count);
 
 and replace the 'x' in each process; the above commands are implemented for each process.
+   The answer can be found in deadlock_sol_d.c
 
 Extra
 e) Change the data to be communicated from 10^6 to 1 in the original program and run again - is there still a deadlock?
