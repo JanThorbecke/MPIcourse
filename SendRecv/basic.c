@@ -17,7 +17,7 @@ int main(int argc,char *argv[])
     //initialize message
     for(i=0;i<size;i++) message[i]=myid;
     
-    //send and receive messages as defined in exercise
+    //send and receive messages as defined in README
     
     free(message);
     

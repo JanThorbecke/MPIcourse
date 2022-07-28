@@ -1,21 +1,28 @@
 
 Use the minimal MPI program which prints "hello world" by each MPI process.
 + Compile and run it on a single processor.
+  Load the following modules on DelftBlue
+  module load 2022r2 gcc slurm
+  module load openmpi/mlnx/gcc/64/4.1.2rc2
+  module load gcc
+
++ On DelftBlue, or another machine that uses SLURM a workload manager you can use the slurm_solution.job to submit to the queue:
+sbatch slurm_solution.job
+
 + Run it on several processors in parallel.
+
 + Modify your program such that:
 	-1- every process writes its rank and the size of MPI_COMM_WORLD,
 	-2- only process ranked 0 in MPI_COMM_WORLD prints "hello world"
+
 + Why is the sequence of the output non-deterministic?
 
-Discuss with your neighbor, what must be done, that the output of all MPI processes on the terminal window is in the sequence of the ranks.  Or is there no way to guarantee this?
-
+Discuss with your neighbor what can be done to get the output of all MPI processes on the terminal window in the sequence of the ranks.  Or is there no way to guarantee this?
 
 
 BACKGROUND INFORMATION
 
-You will notice that the first step to building an MPI program is including the 
-MPI header files with `#include <mpi.h>`. After this, the MPI environment must b
-e initialized with:
+You will notice that the first step to building an MPI program is including the MPI header files with `#include <mpi.h>`. After this, the MPI environment must be initialized with:
 
 MPI_Init( int* argc, char*** argv)
 
@@ -39,8 +46,10 @@ MPI_Finalize()
 
 `MPI_Finalize` is used to clean up the MPI environment. No more MPI calls can be made after this one. 
 
-To run a MPI program you have to use mpirun:
+To run a MPI program you can use srun:
 
-mpirun -np #number_of_tasks ./a.out
+srun -np #number_of_tasks --mem-per-cpu=1G ./a.out
+
+srun -n2 --mem-per-cpu=1G ./version_test
 
 

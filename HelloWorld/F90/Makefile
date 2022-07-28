@@ -1,5 +1,6 @@
 EXECS=hello
-MPIF90?=mpif90
+MPIF90?=mpiifort
+MPIF90=mpif90
 
 all: ${EXECS}
 

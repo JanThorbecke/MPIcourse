@@ -1,6 +1,7 @@
 Using send and receive
 Write a simple program where every processor sends data to the next one. You may use as a starting point the basic.c or basic.f90.
 The program should work as follows:
+
 - Let ntasks be the number of the tasks.
 - Every task with a rank less than ntasks-1 sends a message to task myid+1. For example, task 0 sends a message to task 1.
 - The message content is an integer array of 10^6 elements
@@ -12,7 +13,8 @@ elements that the process received using MPI_Get_count.
 - Each receiver prints out the number of elements it received, the message tag, and the rank 
 - Write the program using MPI_Send and MPI_Recv
 
-MPI commands to use are:
+MPI commands to use in C are:
+----------------------------
 
 MPI_Recv(message,size,MPI_INT,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
 MPI_Get_count(&status,MPI_INT,&count);
@@ -20,6 +22,21 @@ printf("Receiver: %d. received elements: %d. Tag %d. Sender: %d.\n",myid,count,s
 
 MPI_Send(message,size,MPI_INT,myid+1,myid+1,MPI_COMM_WORLD);
 printf("Sender: %d. Sent elements: %d. Tag: %d. Receiver: %d\n", myid,size,myid+1,myid+1);
+
+MPI commands to use in Fortran are:
+----------------------------
+
+    CALL MPI_RECV(message,size, MPI_INTEGER,MPI_ANY_SOURCE,  &
+        MPI_ANY_TAG, MPI_COMM_WORLD, status, ierror)
+    CALL MPI_GET_COUNT(status,MPI_INTEGER,count,ierror)
+    WRITE(*,'(A10,I3,A20,I8,A,I3,A,I3)') 'Receiver: ', myid, 'received elements: ',count, &
+        ' Tag: ', status(MPI_TAG), &
+        ' Sender: ', status(MPI_SOURCE)
+    CALL MPI_SEND(message,size, MPI_INTEGER, myid+1, &
+        myid+1, MPI_COMM_WORLD, ierror)
+    WRITE(*,'(A10,I3,A20,I8,A,I3,A,I3)') 'Sender: ', myid, ' Sent elements: ',size, &
+        '. Tag: ', myid+1, '. Receiver: ', myid+1
+
 
 You have to think about the logic how these calls can be included in basic.c and have to do different MPI calls depending on the MPI-rank.
 
@@ -30,12 +47,16 @@ make c
 Fortran code:
 make f90
 
+
+
+**  extra exercise **
+
 SENDRECV
 To exchange data with another rank there is MPI_Sendrecv.
 
 To compile and see the results of the sendrecv.c code you can do:
 
-mpiicc sendrecv.c -o sendrecv
+mpicc sendrecv.c -o sendrecv
 
 mpirun -np 8 ./sendrecv
 

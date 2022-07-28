@@ -24,7 +24,7 @@ int main(int argc,char *argv[])
                 MPI_Send(outbuf,n,MPI_DOUBLE,j,0,MPI_COMM_WORLD);
                 MPI_Recv(inbuf,n,MPI_DOUBLE,j,1,MPI_COMM_WORLD,&status);
                 MPI_Get_count(&status,MPI_DOUBLE,&count);
-                printf("0 received %d numbers\n",count);
+                fprintf(stderr, "0 received %d numbers\n",count);
             }
         }
         else {
@@ -32,9 +32,12 @@ int main(int argc,char *argv[])
             MPI_Send(outbuf,n,MPI_DOUBLE,0,1,MPI_COMM_WORLD);
             MPI_Recv(inbuf,n,MPI_DOUBLE,0,0,MPI_COMM_WORLD,&status);      
             MPI_Get_count(&status,MPI_DOUBLE,&count);
-            printf("%d received %d numbers\n",myid,count);
+            fprintf(stderr, "%d received %d numbers\n",myid,count);
         }     
     }
+
+    fprintf(stderr, "MPI rank %d is ready with Send/Recv\n",myid);
+
     free(outbuf);
     free(inbuf);
     MPI_Finalize();
