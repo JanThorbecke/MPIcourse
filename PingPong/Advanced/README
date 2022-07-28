@@ -28,6 +28,9 @@ for following message sizes:
 
 You can use ping_pong_advanced2_send.c and ping_pong_advanced2_ssend.c
 
+mpicc ping_pong_advanced2_send.c -o ping_pong_advanced2_send
+mpicc ping_pong_advanced2_ssend.c -o ping_pong_advanced2_ssend
+
 Can you explain the difference between in using send and ssend?
 
 *** IMPORTANT ***
