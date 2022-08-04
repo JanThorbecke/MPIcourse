@@ -12,7 +12,7 @@ int main(int argc, char *argv[]){
   double mypi, pi, h, sum, x;
   double t, t0;
   if(my_id==root_id){
-    if(argc<1){
+    if(argc<2){
       printf("Usage: pi NumberOfIntervals \n");
       exit(1);
     }else{

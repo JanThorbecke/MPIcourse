@@ -1,5 +1,11 @@
--1-
+-0- Load the following modules on DelftBlue:
+module load 2022r2 gcc slurm
+module load openmpi
+
+-1- Part 1
 Implement a parallel matrix-vector multiplication Ax=y such that a root task has the initial full arrays (e.g. as from an input file), and after the multiplication, all tasks have the vector y. A simple parallelization strategy is to divide A into blocks of some number of rows and broadcast the whole x to all tasks. The scattering of the matrix will be different in C and Fortran (due to how the languages place the arrays in memory) - see mxv.f90 and mxv.c and insert the appropriate collective operations.
+
+The following three MPI routines must be inserted in mxv.c at the place of the ***** a size (integer variable) must be inserted.
 
   MPI_Scatter(A, ****, MPI_FLOAT, Aloc, *****, MPI_FLOAT, 0,MPI_COMM_WORLD);
   MPI_Bcast(x, ****, MPI_FLOAT, root, MPI_COMM_WORLD);
@@ -7,18 +13,20 @@ Implement a parallel matrix-vector multiplication Ax=y such that a root task has
   MPI_Allgather(yloc, ****, MPI_FLOAT, y, ****, MPI_FLOAT, MPI_COMM_WORLD);
 
 
--2-
+-2- Part 2
 Insert OpenMP directives in mxv_mpi.c/f90
 
 check the performance between pure MPI and hybrid. 
 
 Compile with 
-mpiicc/ifort -qopenmp (Intel compiler)
+
 mpicc/f90 -fopenmp (GNU compiler)
 
+mpiicc/ifort -qopenmp (Intel compiler)
+
 Look into the job.slurm file to check what will be computed and submit the job to the queue:
+
 sbatch job.slurm
 
 Note that the size of the arrays depends on the number of MPI-tasks (  ndim = n*ntasks; )
-
 

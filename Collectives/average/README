@@ -1,3 +1,17 @@
 
 Complete the program average.f90 (average.c) that, when ready, computes in parallel an average of a set of real (here random) numbers. The number of elements does not have to be an multiple of the number of PEs.
 
+The largest task is to work out the send counts and displacements needed in MPI_Scatterv
+
+The MPI-calls to use are
+
+---
+   rc=MPI_Bcast(&data_size,1,MPI_INT,0,MPI_COMM_WORLD);
+---
+   rc=MPI_Scatterv(a,send_counts,displs,MPI_FLOAT,
+ 		  aloc,my_num,MPI_FLOAT,0,MPI_COMM_WORLD);
+---
+   rc=MPI_Reduce(&psum,&total_sum,1,MPI_FLOAT,MPI_SUM,
+ 		0,MPI_COMM_WORLD);
+
+

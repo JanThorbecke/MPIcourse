@@ -1,6 +1,11 @@
 #!/bin/bash
-#
 #SBATCH -J MatrixVector
+#SBATCH -p compute
+#SBATCH --hint=nomultithread
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=0:01:00
+#SBATCH --account=research-ceg-gse
+##SBATCH --account=education-ceg-msc
 #SBATCH --ntasks-per-node=4
 #SBATCH --cpus-per-task=4
 #SBATCH --nodes=1
@@ -11,11 +16,8 @@ set -x
 echo $SLURM_JOB_NODELIST
 cd $SLURM_SUBMIT_DIR
 
-#mpirun -np 2  ./a.out > inter_node.dat
-
-ls
 export OMP_NUM_THREADS=1
-time srun --mpi=pmi2 --cpu_bind=verbose,core -c $OMP_NUM_THREADS -n 4 ./a.out 
+time srun --cpu_bind=verbose,core -c $OMP_NUM_THREADS -n 4 ./a.out 
 
 export OMP_NUM_THREADS=4
-time srun --mpi=pmi2 --cpu_bind=verbose,core -c $OMP_NUM_THREADS -n 4 ./a.out 
+time srun --cpu_bind=verbose,core -c $OMP_NUM_THREADS -n 4 ./a.out 
