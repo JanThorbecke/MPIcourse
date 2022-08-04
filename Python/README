@@ -1,0 +1,20 @@
+-1- load modules and install mpi4py
+
+module load 2022r2 slurm
+module load openmpi
+module load python3
+
+pip install --user mpi4py
+
+There are 4 example scripts to run and check
+
+2019testmpi.slurm
+2019hellompi.slurm
+2019sendrecv.slurm
+2019broadcastmpi.slurm
+
+You can inspect the Python code add change and submit to the queue
+
+sbatch 2019#name.slurm
+
+

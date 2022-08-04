@@ -1,3 +1,8 @@
+-1- Load the following modules on DelftBlue:
+module load 2022r2 gcc slurm
+module load openmpi
+
+----
 Expand on collective communication routines by going over two very important routines - `MPI_Scatter` and `MPI_Gather`. We will also cover a variant of `MPI_Gather`, known as `MPI_Allgather`.
 
 ## An introduction to MPI_Scatter
@@ -76,11 +81,10 @@ At the beginning of the code, the root process creates an array of random number
 
 If you run the avg program the output should look similar to this. Note that the numbers are randomly generated, so your final result might be different from mine.
 
-```
 mpirun -n 4 ./avg 100
 Avg of all elements is 0.478699
 Avg computed across original data is 0.478699
-```
+
 
 ## MPI_Allgather and modification of average program
 So far, we have covered two MPI routines that perform *many-to-one* or *one-to-many* communication patterns, which simply means that many processes send/receive to one process. Oftentimes it is useful to be able to send many elements to many processes (i.e. a *many-to-many* communication pattern). `MPI_Allgather` has this characteristic.

@@ -2,4 +2,12 @@
 NotUsed
 OpenMP_old
 Texel_rsync
+HelloWorld/C/hello_world
+HelloWorld/C/version_test
+HelloWorld/F90/hello
+ParallelSum/sum
+PingPong/Advanced/ping_pong_advanced2_send
+PingPong/Advanced/ping_pong_advanced2_ssend
+PingPong/Advanced/send.dat
+
 

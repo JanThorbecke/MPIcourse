@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
   if (world_rank == 0) {
     printf("Data size = %d, Trials = %d\n", num_elements * (int)sizeof(int),
            num_trials);
-    printf("Avg my_bcast time = %lf\n", total_my_bcast_time / num_trials);
+    printf("Avg my_bcast time  = %lf\n", total_my_bcast_time / num_trials);
     printf("Avg MPI_Bcast time = %lf\n", total_mpi_bcast_time / num_trials);
   }
 

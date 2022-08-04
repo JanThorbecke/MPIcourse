@@ -1,3 +1,7 @@
+-1- Load the following modules on DelftBlue:
+module load 2022r2 gcc slurm
+module load openmpi
+
 ---
 
 So far in we have examined point-to-point communication, which is communication between two processes. This exercise is the start of the *collective communication* section. Collective communication is a method of communication which involves participation of **all** processes in a communicator. In this exercise, we will discuss the implications of collective communication and go over a standard collective routine - broadcasting.
@@ -61,6 +65,9 @@ void my_bcast(void* data, int count, MPI_Datatype datatype, int root,
 The root process sends the data to everyone else while the others receive from the root process. Easy, right? If you run the my_bcast program, the output should look similar to this.
 
 
+-2- compile my_bcast and run the code and read the source code in my_bcast.c 
+make my_bcast
+
 mpirun -n 4 ./my_bcast
 Process 0 broadcasting data 100
 Process 2 received data 100 from root process
@@ -98,21 +105,24 @@ for (i = 0; i < num_trials; i++) {
 
 In this code, `num_trials` is a variable stating how many timing experiments should be executed. We keep track of the accumulated time of both functions in two different variables. The average times are printed at the end of the program. 
 
+
+-3- compile the comparison code and run the code using the job.slurm script: run within a node and between (2,8,16,..) nodes.
+
 If you run the compare_bcast program the output should look similar to this.
 
-mpirun -n 16 -machinefile hosts ./compare_bcast 100000 10
+mpirun -n 16 ./compare_bcast 100000 10
 Data size = 400000, Trials = 10
-Avg my_bcast time = 0.510873
-Avg MPI_Bcast time = 0.126835
+Avg my_bcast time  = 0.001022
+Avg MPI_Bcast time = 0.000285
 
 The run script executes the code using 16 processors, 100,000 integers per broadcast, and 10 trial runs for timing results. As you can see, my experiment using 16 processors connected via ethernet shows significant timing differences between our naive implementation and MPI's implementation. Here are the timing results at different scales.
 
 | Processors | my_bcast | MPI_Bcast |
-| --- | --- | --- |
-| 2 | 0.0344 | 0.0344 |
-| 4 | 0.1025 | 0.0817 |
-| 8 | 0.2385 | 0.1084 |
-| 16 | 0.5109 | 0.1296 |
+| ---        | ---      | ---       |
+| 2          | 0.0344   | 0.0344 |
+| 4          | 0.1025   | 0.0817 |
+| 8          | 0.2385   | 0.1084 |
+| 16         | 0.5109   | 0.1296 |
 
 As you can see, there is no difference between the two implementations at two processors. This is because `MPI_Bcast`'s tree implementation does not provide any additional network utilization when using two processors. However, the differences can clearly be observed when going up to even as little as 16 processors.
 
