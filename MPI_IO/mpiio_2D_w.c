@@ -45,9 +45,9 @@ int main(int argc, char *argv[]) {
     }
 
 //	fprintf(stderr,"ID %d with coords (%d, %d) offset %d %d bufsize %d\n",myid,coords[0], coords[1], offset[0], offset[1], bufsize);
-  buf = (int *) malloc(bufsize * sizeof(int));
-  for (i=0; i < bufsize; i++)
-    buf[i] = myid;
+    buf = (int *) malloc(bufsize * sizeof(int));
+    for (i=0; i < bufsize; i++)
+       buf[i] = myid;
 
   MPI_File fp;
   MPI_Datatype filetype;

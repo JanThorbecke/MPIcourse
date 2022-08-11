@@ -23,7 +23,7 @@ export SAVE_LIST=0,4,8,12,15
 
 starttime=`date +%s%N`
 
-srun  -n 16 ./3dfd nt=1000 itsnap=2000
+srun  -n 16 ./3dfd nt=1000 itsnap=100
 
 endtime=`date +%s%N`
 

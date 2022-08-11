@@ -23,7 +23,7 @@ my_exa2: my_exa2.c
 	$(MPIF90) $(CFLAGS) -c $<
 
 clean:
-	rm -f core *.o userdefined_types1 userdefined_types2 userdefined_types3
+	rm -f core *.o a.out my_exa1 my_exa2
 
 print:	Makefile $(SRC)
 	$(PRINT) $?
