@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J hello-mpi
+#SBATCH -J 3dfd
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=16
 #SBATCH --nodes=1
@@ -12,11 +12,13 @@
 set -x
 cd $SLURM_SUBMIT_DIR
 
-export LD_PRELOAD=/home/jthorbecke/tools/mpitrace/src/libmpitrace.so
-#export SAVE_LIST=0,4,8,12,15
-#export TRACE_SEND_PATTERN=yes
+module load papi
+#export LD_PRELOAD=/home/jthorbecke/tools/mpitrace/src/libmpitrace.so
+export LD_PRELOAD=/home/jthorbecke/tools/mpitrace/src/libmpihpm.so
+export SAVE_LIST=0,4,8,12,15
+export TRACE_SEND_PATTERN=yes
 #export PROFILE_BY_COMMUNICATOR=yes
-#export ENABLE_TRACING=yes
+export ENABLE_TRACING=yes
 export TRACE_ALL_TASKS=yes
 
 starttime=`date +%s%N`

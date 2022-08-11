@@ -1,0 +1,19 @@
+set key outside right top
+set size 3,3
+set style line 12 lc rgb 'blue' lt 1 lw 3
+set style line 12 lc rgb 'red' lt 1 lw 1
+
+nmpi=16
+set grid xtics ytics mxtics mytics ls 12, ls 13
+set mxtics 8
+set mytics 8
+set xtics 8
+set ytics 8
+set xrange [0:nmpi]
+set yrange [0:nmpi]
+
+set term postscript color eps "Helvetica" 36 #enhanced
+set output 'CommMatrix.eps'
+
+plot 'matrix.txt' u 1:2 with points pointtype 5 pointsize 3
+

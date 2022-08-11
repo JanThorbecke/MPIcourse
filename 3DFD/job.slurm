@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J hello-mpi
+#SBATCH -J 3dfd
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks=16
 #SBATCH --nodes=1

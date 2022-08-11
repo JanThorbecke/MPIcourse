@@ -94,6 +94,7 @@ int main (int argc, char *argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
 	t0= wallclock_time();
+	MPI_Pcontrol(1);
 	initargs(argc,argv);
 	requestdoc(0);
 
@@ -435,6 +436,7 @@ int main (int argc, char *argv[])
 
 	}
 	ttot = wallclock_time() - t00;
+	MPI_Pcontrol(0);
 
 	if (verbose && my_rank == 0) {
 		fprintf(stderr,"rank %d total time in %f seconds\n", my_rank, ttot);
