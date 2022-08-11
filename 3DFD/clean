@@ -1,0 +1,9 @@
+#!/bin/bash
+
+rm pattern.*
+rm mpi_profile.*
+rm hpm_job_summary.*
+rm send_bytes.sparse.*
+rm *.trc
+rm src.bin
+
