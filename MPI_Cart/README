@@ -22,5 +22,12 @@ Check how is the decomposition done?
 
 Change the code to make non-peridioc boundaries in all 2 dimensions.
 
+***** 
+
+The jacobi.f90 code is an example of MPI_Cart combined with MPI_Type_vector for a Poisson solver.
+
+make jacobi
+and to submit the job jacobi.slurm
+
 
 
