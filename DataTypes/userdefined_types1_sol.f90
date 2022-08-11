@@ -3,7 +3,7 @@ PROGRAM usertypes1
   IMPLICIT NONE
   INCLUDE 'mpif.h'
 
-  INTEGER, PARAMETER :: n = 4
+  INTEGER, PARAMETER :: n = 8
   REAL(kind=4), DIMENSION(n,n) :: array
 
   INTEGER :: i,j
@@ -31,9 +31,15 @@ PROGRAM usertypes1
 
 ! Send the first row from 0 to 1
   IF (my_id ==0 ) THEN
-     CALL MPI_SEND(array(1:,:), 1, newtype, 1, 0, MPI_COMM_WORLD, rc)
+     DO i=1,n
+        CALL MPI_SEND(array(i,1), 1, newtype, 1, 0, MPI_COMM_WORLD, rc)
+     !CALL MPI_SEND(array(2,1), 1, newtype, 1, 0, MPI_COMM_WORLD, rc)
+     END DO
   ELSE
-     CALL MPI_RECV(array, 1, newtype, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
+     DO i=1,n
+        CALL MPI_RECV(array(i,1), 1, newtype, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
+     !CALL MPI_RECV(array(2,1), 1, newtype, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
+     END DO
   END IF
 
   IF (my_id ==1 ) THEN
@@ -45,17 +51,17 @@ PROGRAM usertypes1
   WRITe(*,*)
 
 ! Send also the last row from 0 to 1
-  IF (my_id ==0 ) THEN
-     CALL MPI_SEND(array(n,1), 1, newtype, 1, 0, MPI_COMM_WORLD, rc)
-  ELSE
-     CALL MPI_RECV(array(n,1), 1, newtype, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
-  END IF
-
-  IF (my_id ==1 ) THEN
-     DO i=1,n
-        WRITE(*,*) array(i,:)
-     END DO
-  END IF
+!  IF (my_id ==0 ) THEN
+!     CALL MPI_SEND(array(n,1), 1, newtype, 1, 0, MPI_COMM_WORLD, rc)
+!  ELSE
+!     CALL MPI_RECV(array(n,1), 1, newtype, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
+!  END IF
+!
+!  IF (my_id ==1 ) THEN
+!     DO i=1,n
+!        WRITE(*,*) array(i,:)
+!     END DO
+!  END IF
 
   CALL MPI_TYPE_FREE(newtype, rc)
   CALL MPI_FINALIZE(rc)

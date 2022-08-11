@@ -1,5 +1,4 @@
 
-
 Three examples of defined MPI data types are given:
 
 - MPI_Type_Vector (userdefined_types1) 

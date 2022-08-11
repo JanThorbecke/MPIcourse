@@ -1,6 +1,6 @@
-This exercise uses some advanced MPI fucntions to set u a 2D domain decomposition.
+This exercise uses some advanced MPI functions to set u a 2D domain decomposition.
 
-1 check the Makefile and verify if mpiicc is available 
+1 check the Makefile and verify if mpicc is available 
 
 2 compile the code by typing 
 

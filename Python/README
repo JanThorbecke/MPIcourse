@@ -2,9 +2,9 @@
 
 module load 2022r2 slurm
 module load openmpi
-module load python3
+module load py-mpi4py
 
-pip install --user mpi4py
+#pip install --user mpi4py
 
 There are 4 example scripts to run and check
 
