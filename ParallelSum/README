@@ -82,7 +82,7 @@ MPI_Probe(
 
 Similar to the last example, process zero picks a random amount of numbers to send to process one. What is different in this example is that process one now calls `MPI_Probe` to find out how many elements process zero is trying to send (using `MPI_Get_count`).  Process one then allocates a buffer of the proper size and receives the numbers. Running the code will look similar to this.
 
-Although this example is trivial, `MPI_Probe` forms the basis of many dynamic MPI applications. For example, master/slave programs will often make heavy use of `MPI_Probe` when exchanging variable-sized worker messages. As an exercise, make a wrapper around `MPI_Recv` that uses `MPI_Probe` for any dynamic applications you might write. It makes the code look much nicer :-)
+Although this example is trivial, `MPI_Probe` forms the basis of many dynamic MPI applications. For example, main/worker programs will often make heavy use of `MPI_Probe` when exchanging variable-sized worker messages. As an exercise, make a wrapper around `MPI_Recv` that uses `MPI_Probe` for any dynamic applications you might write. It makes the code look much nicer :-)
 
 
 The following MPI code fragments are needed in sum_probe.c to get the message size

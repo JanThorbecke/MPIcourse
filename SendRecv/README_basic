@@ -5,9 +5,9 @@ The program should work as follows:
 - Let ntasks be the number of the tasks.
 - Every task with a rank less than ntasks-1 sends a message to task myid+1. For example, task 0 sends a message to task 1.
 - The message content is an integer array of 10^6 elements
-- The message tag is the receiver’s id number.
+- The message tag is the receiver's id number.
 - The sender prints out the number of elements it sends and the tag number.
-- All tasks with rank ≥ 1 receive messages. You should check the MPI_SOURCE and MPI_TAG fields of the
+- All tasks with rank 1 receive messages. You should check the MPI_SOURCE and MPI_TAG fields of the
 status variable (in Fortran you should check the corresponding array elements). Also check then number of
 elements that the process received using MPI_Get_count.
 - Each receiver prints out the number of elements it received, the message tag, and the rank 

@@ -5,13 +5,13 @@ Ping-pong is a standard test in which two processes repeatedly pass a message ba
 Time the ping-pongs with MPI_WTIME calls. 
 
 You may use pingpong.c or pingpong.f90 as a starting point for this exercise. 
-The followong commands have to be inserted into the code:
+The following commands have to be inserted into the code:
 
   MPI_Send(message,size,MPI_DOUBLE,send_to,ping,MPI_COMM_WORLD);
   MPI_Recv(message,size,MPI_DOUBLE,recv_from,pong,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
-  MPI_Recv(message,size,MPI_DOUBLE,recv_from,ping,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
   MPI_Send(message,size,MPI_DOUBLE,send_to,pong,MPI_COMM_WORLD);
+  MPI_Recv(message,size,MPI_DOUBLE,recv_from,ping,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
 To compile and produce executable a.out:
 

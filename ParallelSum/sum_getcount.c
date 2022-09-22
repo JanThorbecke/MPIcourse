@@ -23,12 +23,12 @@ int main(int argc, char *argv[]){
         // Send the amount of doubles to process one
         MPI_Send(array+Nloc,N-Nloc,MPI_DOUBLE,1,10,MPI_COMM_WORLD);
     }
-    
     else{
         array=malloc(sizeof(double)*MAX_NUMBERS);
         // Receive at most MAX_NUMBERS from process zero
         MPI_Recv(array,MAX_NUMBERS,MPI_DOUBLE,0,10,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
     }
+
     psum=0;
     for(i=0;i<Nloc;i++){
         psum+=array[i];
