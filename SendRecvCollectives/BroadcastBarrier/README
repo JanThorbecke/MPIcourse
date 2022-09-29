@@ -107,6 +107,7 @@ In this code, `num_trials` is a variable stating how many timing experiments sho
 
 
 -3- compile the comparison code and run the code using the job.slurm script: run within a node and between (2,8,16,..) nodes.
+make compare_bcast
 
 If you run the compare_bcast program the output should look similar to this.
 

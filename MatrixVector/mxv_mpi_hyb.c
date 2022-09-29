@@ -9,10 +9,14 @@ int main(int argc, char *argv[]){
   float *A, *Aloc;
   float *x, *y, *yloc, asum;
   int rc, ntasks, my_id;
-  int ndim, i, j, low, up;
-  MPI_Init(&argc,&argv);
+  int ndim, i, j, low, up, provided;
+
+  MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided);
   MPI_Comm_size(MPI_COMM_WORLD,&ntasks);
   MPI_Comm_rank(MPI_COMM_WORLD,&my_id);
+  if (provided!=MPI_THREAD_MULTIPLE && my_id==0) {
+	  fprintf(stderr,"MPI_Init_thread asked for MPI_THREAD_MULTIPLE but is not provided.");
+  }
 
   ndim = n*ntasks;
   x=(float *)malloc(ndim*sizeof(float));
