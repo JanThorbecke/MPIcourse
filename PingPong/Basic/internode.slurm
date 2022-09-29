@@ -16,7 +16,6 @@ cd $SLURM_SUBMIT_DIR
 
 #mpirun -np 2  ./a.out > inter_node.dat
 
-ls
 export OMP_NUM_THREADS=1
 srun --mpi=pmix --cpu_bind=verbose,core -c $OMP_NUM_THREADS -n 2 ./a.out > inter_node.dat
 
