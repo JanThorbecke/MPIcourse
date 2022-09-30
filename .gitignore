@@ -9,5 +9,8 @@ ParallelSum/sum
 PingPong/Advanced/ping_pong_advanced2_send
 PingPong/Advanced/ping_pong_advanced2_ssend
 PingPong/Advanced/send.dat
+slurm-*.out
+a.out
+*.o
 
 
