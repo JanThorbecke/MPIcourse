@@ -8,7 +8,7 @@
 #SBATCH --time=0:01:00
 #SBATCH --account=research-ceg-gse
 ##SBATCH --account=education-ceg-msc
-#SBATCH --ntasks-per-node=32
+#SBATCH --ntasks-per-node=48
 
 set -x
 echo $SLURM_JOB_NODELIST
