@@ -6,7 +6,7 @@
 #define n 512
 
 int main(int argc, char *argv[]){
-  float *A, *Aloc, sumy;
+  float *A, *Aloc, ysum;
   float *x, *y, *yloc;
   int rc, ntasks, my_id, nblock;
   int ndim, i, j, low, up;
@@ -47,9 +47,12 @@ int main(int argc, char *argv[]){
   MPI_Allgather(yloc, n, MPI_FLOAT, y, n, MPI_FLOAT, MPI_COMM_WORLD);
 
   // check if sum of Y is the same
-  sumy=0;
-  if (my_id == root) for (i=0; i<ndim; ++i) {
-	  printf("%f ", y[i]);
+  ysum=0;
+  if (my_id == root) {
+    for (i=0; i<ndim; ++i) {
+      ysum =+ y[i];
+    }
+    printf("ysum = %f ", ysum);
   }
   
   if (my_id == root) free(A); 
