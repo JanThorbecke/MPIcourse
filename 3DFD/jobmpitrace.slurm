@@ -7,7 +7,7 @@
 #SBATCH -p compute
 #SBATCH --hint=nomultithread
 #SBATCH --mem-per-cpu=1G
-#SBATCH --time=0:02:00
+#SBATCH --time=0:04:00
 
 set -x
 cd $SLURM_SUBMIT_DIR

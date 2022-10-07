@@ -2,7 +2,7 @@
 #SBATCH -J MatrixVector
 #SBATCH -p compute
 #SBATCH --hint=nomultithread
-#SBATCH --mem-per-cpu=1G
+#SBATCH --mem-per-cpu=2G
 #SBATCH --time=0:15:00
 #SBATCH --account=research-ceg-gse
 ##SBATCH --account=education-ceg-msc
@@ -19,8 +19,10 @@ cd $SLURM_SUBMIT_DIR
 export OMP_PLACES=cores
 export OMP_PROC_BIND=true
 export OMP_DISPLAY_AFFINITY=true
-export OMP_AFFINITY_FORMAT="Thread Affinity: Process %P thread %.4n affinity %.4{thread_affinity} on node %.8H"
+export OMP_AFFINITY_FORMAT="Thread Affinity: Process %P thread %.3n affinity %.3{thread_affinity} on node %.8H"
 
+module use /home/jthorbecke/tools/modulefiles/
+module load mpitrace
 export OMP_NUM_THREADS=1
 time srun --cpu_bind=verbose,core -c $OMP_NUM_THREADS -n $SLURM_NTASKS ./a.out 
 
